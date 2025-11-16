@@ -73,18 +73,6 @@ public static class BoundingSphereRenderer
         effect.View = view;
         effect.Projection = projection;
 
-        // Opcional: Cambiar el color si es necesario (ej. para indicar colisión)
-        foreach (var vert in verts)
-        {
-            // Cambiar el color de todos los vértices a un color dinámico
-            // En un escenario real, solo necesitarías cambiar el color de un subconjunto
-            // o pasar el color como una constante, pero para un ejemplo simple lo hacemos aquí:
-            // Nota: Esto es ineficiente; en un juego, harías esto una vez o usarías un array de colores separados.
-        }
-        // Asignar el color de forma más eficiente (usando un array auxiliar si es necesario)
-        // Para simplificar, asumimos que el color ya está en los vértices o se maneja en el sombreador.
-        // Un enfoque más simple es:
-
         effect.DiffuseColor = color.ToVector3(); // Usar el color difuso del BasicEffect
 
         // 3. Dibujar la geometría:
