@@ -27,6 +27,9 @@ namespace TGC.MonoGame.TP.Models
         private const float ALTURA_MIN = -5f;
         private const float ALTURA_MAX = 10f;
 
+        private const float DISTANCIA_MIN = -15f;
+        private const float DISTANCIA_MAX = 15f;
+
         private bool estaDestruido = false;
 
 
@@ -187,11 +190,14 @@ namespace TGC.MonoGame.TP.Models
             if (keyboardState.IsKeyDown(Keys.D))
                 nuevoMovimiento += Vector3.Forward * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+
+
             var traslacion = Matrix.CreateTranslation(nuevoMovimiento);
             _worldMatrix = _worldMatrix * traslacion;
 
             Vector3 pos = _worldMatrix.Translation;
             pos.Y = MathHelper.Clamp(pos.Y, ALTURA_MIN, ALTURA_MAX);
+            pos.Z = MathHelper.Clamp(pos.Z, DISTANCIA_MIN, DISTANCIA_MAX);
             _worldMatrix.Translation = pos;
 
             foreach (Proyectil proyectil in proyectiles)
