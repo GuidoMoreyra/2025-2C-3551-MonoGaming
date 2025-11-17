@@ -37,7 +37,7 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void Draw(Matrix view, Matrix projection)
+        public void Draw(Matrix view, Matrix projection, Vector3 LightPosition, Vector3 CameraPosition)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -51,6 +51,9 @@ namespace TGC.MonoGame.TP.Models
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
                     effect.Parameters["World"].SetValue(world);
+                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
+                    effect.Parameters["lightPosition"].SetValue(LightPosition);
+                    effect.Parameters["eyePosition"]?.SetValue(CameraPosition);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {

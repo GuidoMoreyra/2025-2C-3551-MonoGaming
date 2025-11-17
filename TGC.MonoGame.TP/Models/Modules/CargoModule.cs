@@ -30,7 +30,7 @@ internal class CargoModule : IModule
     }
 
 
-    public void Draw(Matrix view, Matrix projection)
+    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
     {
 
         var ajusteDeTraslacion_ = Matrix.CreateTranslation(Vector3.Right * ajusteDeTraslacionZ + Vector3.Down * ajusteDeTraslacionY);
@@ -58,7 +58,7 @@ internal class CargoModule : IModule
         }
         foreach (CargoShip ship in obstacles)
         {
-            ship.Draw(view, projection);
+            ship.Draw(view, projection, cameraPosition);
         }
     }
 

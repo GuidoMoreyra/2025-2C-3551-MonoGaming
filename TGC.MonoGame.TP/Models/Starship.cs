@@ -14,6 +14,7 @@ namespace TGC.MonoGame.TP.Models
     internal class PlayerShip
     {
         private Matrix _worldMatrix;
+        public Vector3 Position { get; set; }
         private Model _model;
 
         private int cantidad_de_balas = 10;
@@ -45,6 +46,7 @@ namespace TGC.MonoGame.TP.Models
 
         public PlayerShip(ContentManager content)
         {
+            Position = Vector3.Zero;
             sonidoColision = content.Load<SoundEffect>(MonoGaming.ContentFolderSounds + "ExplosionJugador");
 
             //Recupero el modelo con las texturas
@@ -102,7 +104,7 @@ namespace TGC.MonoGame.TP.Models
             _worldBoundingBox = BoundingBox.CreateFromPoints(transformedCorners);
         }
 
-        public void Draw(Matrix view, Matrix projection)
+        public void Draw(Matrix view, Matrix projection, Vector3 CameraPosition, Vector3 LightPosition)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -117,6 +119,9 @@ namespace TGC.MonoGame.TP.Models
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
                     effect.Parameters["World"].SetValue(world);
+                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
+                    effect.Parameters["lightPosition"].SetValue(LightPosition);
+                    effect.Parameters["eyePosition"]?.SetValue(CameraPosition);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
@@ -190,14 +195,14 @@ namespace TGC.MonoGame.TP.Models
             if (keyboardState.IsKeyDown(Keys.D))
                 nuevoMovimiento += Vector3.Forward * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-
-
             var traslacion = Matrix.CreateTranslation(nuevoMovimiento);
             _worldMatrix = _worldMatrix * traslacion;
 
             Vector3 pos = _worldMatrix.Translation;
             pos.Y = MathHelper.Clamp(pos.Y, ALTURA_MIN, ALTURA_MAX);
             pos.Z = MathHelper.Clamp(pos.Z, DISTANCIA_MIN, DISTANCIA_MAX);
+
+            Position = pos;
             _worldMatrix.Translation = pos;
 
             foreach (Proyectil proyectil in proyectiles)
@@ -221,6 +226,7 @@ namespace TGC.MonoGame.TP.Models
 
         public void Restart()
         {
+            Position = Vector3.Zero;
             estaDestruido = false;
             cantidad_de_balas = 10;
             var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(-90));

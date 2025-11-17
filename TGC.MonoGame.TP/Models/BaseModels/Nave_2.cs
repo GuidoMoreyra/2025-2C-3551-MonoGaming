@@ -12,7 +12,7 @@ namespace TGC.MonoGame.TP.Models.BaseModels
             {
                 _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Nave_2/Nave_2");
                 var texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Nave_2/Nave2_Tex");
-                var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShaderTexture");
+                var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "FresnelShader");
 
                 foreach (var mesh in _model.Meshes)
                 {
@@ -21,7 +21,6 @@ namespace TGC.MonoGame.TP.Models.BaseModels
                         var meshEffect = effect.Clone();
                         meshPart.Effect = meshEffect;
                         meshPart.Effect.Parameters["Texture"].SetValue(texture);
-
                     }
                 }
 

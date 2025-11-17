@@ -106,7 +106,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             _boundingBoxWorld = BoundingBox.CreateFromPoints(transformedCorners);
         }
 
-        public void Draw(Matrix view, Matrix projection)
+        public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
         {
             var rotationXMat = Matrix.CreateRotationX(MathHelper.ToRadians(rotacionX));
             var rotationYMat = Matrix.CreateRotationY(MathHelper.ToRadians(rotacionY));

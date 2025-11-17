@@ -10,6 +10,7 @@ using TGC.MonoGame.TP.Models;
 using TGC.MonoGame.TP.Util;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
+using TGC.MonoGame.TP.Models.Obstacles;
 
 
 
@@ -35,7 +36,6 @@ public class MonoGaming : Game
     private EscenarioGenerator escenarioGenerator;
 
     private const float VELOCIDAD = 20f;
-    private float posicion = 0;
 
     private int puntos = 0;
     private int multiplicador = 1;
@@ -44,6 +44,11 @@ public class MonoGaming : Game
     private PlayerShip player;
 
     float tiempoAcumulado = 0f;
+    private Vector3 CameraPosition;
+    private Vector3 LightPosition;
+    public static Color LightAmbientColor = new Color(0.25f, 0.0f, 0.0f);
+    public static Color LightDiffuseColor = Color.LightYellow;
+    public static Color LightSpecularColor = Color.White;
 
     private bool _wasPaused = false;
     private GameState gameState = GameState.Menu;
@@ -85,7 +90,8 @@ public class MonoGaming : Game
 
         spriteBatch = new SpriteBatch(GraphicsDevice);
         // La logica de inicializacion que no depende del contenido se recomienda poner en este metodo.
-
+        LightPosition = Vector3.One * 1000;
+        CameraPosition = Vector3.One;
 
         DebugCamera = new SimpleCamera(GraphicsDevice.Viewport.AspectRatio, Vector3.UnitZ * 150, 400, 2.0f, 1, 3000);
 
@@ -167,7 +173,6 @@ public class MonoGaming : Game
         // Play the selected song reference.
         MediaPlayer.Play(song);
 
-        //GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
         var worldMatrix_1 = Matrix.Identity * Matrix.CreateTranslation(Vector3.Left * 60.5f);
         var worldMatrix_2 = Matrix.Identity * Matrix.CreateTranslation(Vector3.Left * 60.5f * 2);
         Content.Load<SoundEffect>(ContentFolderSounds + "Explosion");
@@ -232,7 +237,10 @@ public class MonoGaming : Game
             if (gameState == GameState.Playing)
             {
                 player.Update(gameTime, ref _view, ref _projection, Content);
-
+                Matrix aux = Matrix.Invert(_view);
+                CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
+                LightPosition = player.Position + (Vector3.Left * 50) + (Vector3.Down * 3);
+                
                 tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (tiempoAcumulado >= 0.75f)
                 {
@@ -268,7 +276,7 @@ public class MonoGaming : Game
 
         if (gameState == GameState.Menu)
         {
-            mainMenu.Draw(_view, _projection);
+            mainMenu.Draw(_view, _projection, LightPosition, CameraPosition);
         }
         else if (gameState == GameState.GameOver)
         {
@@ -278,10 +286,11 @@ public class MonoGaming : Game
         else
         {
 
-            player.Draw(_view, _projection);
+            player.Draw(_view, _projection, CameraPosition, LightPosition);
             foreach (IModule module in escenario)
             {
-                module.Draw(_view, _projection);
+                module.Draw(_view, _projection, CameraPosition);
+                //new Box(Content, Matrix.Identity * Matrix.CreateTranslation(LightPosition), 0.0f).Draw(_view, _projection);
             }
             hud.Draw(spriteBatch);
 
