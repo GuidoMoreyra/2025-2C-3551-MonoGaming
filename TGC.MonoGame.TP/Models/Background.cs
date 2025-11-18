@@ -24,7 +24,6 @@ namespace TGC.MonoGame.TP.Models
 
             graphicsDevice.DepthStencilState = DepthStencilState.None;
 
-            // 4. Dibujar el Quad
             foreach (var pass in _effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
@@ -38,7 +37,6 @@ namespace TGC.MonoGame.TP.Models
                 );
             }
 
-            // 5. Restaurar matrices y Z-Buffer para la escena 3D
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
         }
     }

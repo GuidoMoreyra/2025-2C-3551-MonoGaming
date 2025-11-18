@@ -14,6 +14,8 @@ namespace TGC.MonoGame.TP.Models
 {
     internal class PlayerShip
     {
+        private bool toogleGodModeActive = true;
+        private bool _godMode = false;
         private Matrix _worldMatrix;
         public Vector3 Position { get; set; }
         private Model _model;
@@ -37,6 +39,8 @@ namespace TGC.MonoGame.TP.Models
         private const float DISTANCIA_MAX = 15f;
 
         private bool estaDestruido = false;
+
+        private float distanciaRecorrida = 0.0f;
 
 
         private float angulo = 0;
@@ -123,6 +127,7 @@ namespace TGC.MonoGame.TP.Models
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["MainTechnique"];
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
                     effect.Parameters["World"].SetValue(world);
@@ -144,6 +149,33 @@ namespace TGC.MonoGame.TP.Models
             }
             if(tieneEscudo == true)
                 escudo.Draw(view,projection,_worldMatrix,graphicsDevice);
+        }
+
+        public void DrawBloom(Matrix view, Matrix projection)
+        {
+            foreach (var mesh in _model.Meshes)
+            {
+                var rotacionJugador = Matrix.CreateRotationZ(MathHelper.ToRadians(angulo));
+                var meshWorld = mesh.ParentBone.Transform;
+                var scaleMatrix = Matrix.CreateScale(SCALE);
+                var world = meshWorld * rotacionJugador * scaleMatrix * _worldMatrix;
+
+                foreach (var meshPart in mesh.MeshParts)
+                {
+                    var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["Bloom"];
+                    effect.Parameters["View"].SetValue(view);
+                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["World"].SetValue(world);
+                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
+
+                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    {
+                        pass.Apply();
+                    }
+                }
+                mesh.Draw();
+            }
         }
 
         public void SetWorldMatrix(Matrix newWorld)
@@ -173,6 +205,8 @@ namespace TGC.MonoGame.TP.Models
             Vector3 nuevoMovimiento = Vector3.Zero;
 
             nuevoMovimiento += Vector3.Left * 4 * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            distanciaRecorrida += nuevoMovimiento.X;
 
             proyectiles.RemoveAll(o => o.estaDestruido);
 
@@ -213,6 +247,16 @@ namespace TGC.MonoGame.TP.Models
             if (keyboardState.IsKeyDown(Keys.D))
                 nuevoMovimiento += Vector3.Forward * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            if (keyboardState.IsKeyDown(Keys.G) && toogleGodModeActive)
+            {
+                _godMode = !_godMode;
+                toogleGodModeActive = false;
+            }
+            else if (keyboardState.IsKeyUp(Keys.G))
+            {
+                toogleGodModeActive = true;
+            }
+
             var traslacion = Matrix.CreateTranslation(nuevoMovimiento);
             _worldMatrix = _worldMatrix * traslacion;
 
@@ -233,8 +277,11 @@ namespace TGC.MonoGame.TP.Models
 
         public void Destroy()
         {
-            sonidoColision.Play();
-            estaDestruido = true;
+            if (!_godMode)
+            {
+                sonidoColision.Play();
+                estaDestruido = true;
+            }
         }
 
         public bool EstaDestruido()
@@ -242,9 +289,15 @@ namespace TGC.MonoGame.TP.Models
             return estaDestruido;
         }
 
+        public float GetDistanciaRecorrida()
+        {
+            return distanciaRecorrida;
+        }
+
         public void Restart()
         {
             Position = Vector3.Zero;
+            distanciaRecorrida = 0.0f;
             estaDestruido = false;
             cantidad_de_balas = 10;
             var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(-90));

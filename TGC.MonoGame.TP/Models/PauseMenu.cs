@@ -67,6 +67,8 @@ namespace TGC.MonoGame.TP.Models
             }
 
             spriteBatch.End();
+
+            graphicsDevice.BlendState = BlendState.Opaque;
         }
     }
 }

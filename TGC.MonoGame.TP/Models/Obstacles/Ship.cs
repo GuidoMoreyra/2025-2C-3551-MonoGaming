@@ -95,9 +95,35 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["MainTechnique"];
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
                     effect.Parameters["World"].SetValue(world);
+
+                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    {
+                        pass.Apply();
+                    }
+                }
+                mesh.Draw();
+            }
+        }
+
+        public void DrawBloom(Matrix view, Matrix projection)
+        {
+            foreach (var mesh in _model.Meshes)
+            {
+                var meshWorld = mesh.ParentBone.Transform;
+                var scaleMatrix = Matrix.CreateScale(SCALE);
+                var world = meshWorld * scaleMatrix * _worldMatrix;
+                foreach (var meshPart in mesh.MeshParts)
+                {
+                    var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["Bloom"];
+                    effect.Parameters["View"].SetValue(view);
+                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["World"].SetValue(world);
+                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
@@ -136,6 +162,6 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             estaDestruido = true;
         }
     }
-    
-    
+
+
 }

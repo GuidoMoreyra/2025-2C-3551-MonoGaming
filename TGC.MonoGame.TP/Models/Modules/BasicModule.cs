@@ -66,4 +66,7 @@ internal class BasicModule : IModule
         return "Basic";
     }
 
+    public void DrawBloom(Matrix view, Matrix projection)
+    {
+    }
 }

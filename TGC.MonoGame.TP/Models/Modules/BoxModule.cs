@@ -102,4 +102,12 @@ internal class BoxModule : IModule
     {
         return "Corridor";
     }
+
+    public void DrawBloom(Matrix view, Matrix projection)
+    {
+        foreach (Box box in obstacles)
+        {
+            box.DrawBloom(view, projection);
+        }
+    }
 }

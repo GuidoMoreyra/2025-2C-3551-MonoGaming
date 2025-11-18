@@ -16,7 +16,7 @@ internal class EscenarioGenerator
     private string lastModule;
     ContentManager contentManager;
 
-    private const float DISTANCE_BETWEEN_MODULES = 56.5f;
+    public const float DISTANCE_BETWEEN_MODULES = 56.5f;
 
     public EscenarioGenerator(ContentManager contentManager)
     {

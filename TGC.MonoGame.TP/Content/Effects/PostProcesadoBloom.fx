@@ -17,10 +17,11 @@ float4x4 World;
 float4x4 View;
 float4x4 Projection;
 
-float3 eyePosition; // Camera position
 
 // Texturas
 uniform Texture2D Texture;
+
+
 // Sampler
 sampler s = sampler_state
 {
@@ -32,63 +33,47 @@ sampler s = sampler_state
     AddressV = Wrap;
 };
 
-float Time = 0;
+texture bloomTexture;
+sampler2D bloomTextureSampler = sampler_state
+{
+    Texture = (bloomTexture);
+    MagFilter = Linear;
+    MinFilter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
 
 struct VertexShaderInput
 {
 	float4 Position : POSITION0;
     float2 TexCoord : TEXCOORD0;
-    float4 Normal : NORMAL;
 };
 
 struct VertexShaderOutput
 {
 	float4 Position : SV_POSITION;
     float2 TexCoord : TEXCOORD1;
-    float4 Normal : TEXCOORD2;
-    float4 WorldPosition : TEXCOORD3;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
 {
     // Clear the output
 	VertexShaderOutput output = (VertexShaderOutput)0;
-    // Model space to World space
-    output.WorldPosition = mul(input.Position, World);
-    // World space to View space
-    float4 viewPosition = mul(output.WorldPosition, View);	
-	// View space to Projection space
-    output.Position = mul(viewPosition, Projection);
 
+    //Como es postprocesado, la position ya esta en espacio de proyeccion
+    output.Position = input.Position;
     output.TexCoord = input.TexCoord;
-    output.Normal = input.Normal;
 
     return output;
 }
 
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-    float3 fresnelColor = float3(1.0f, 0.576f, 0.0f);
-
-    float3 normal = normalize(input.Normal.xyz);
-
-    float4 texelColor = tex2D(s,input.TexCoord);
-
-
-    float fresnel = dot(normal, normalize(eyePosition - input.WorldPosition.xyz));
-    fresnel = saturate(1 - fresnel);
-
-    float3 finalFresnel = fresnel * fresnelColor;
-
-    float3 finalColor = texelColor.rgb + finalFresnel;
-
-    return float4(finalColor, 1.0f);
-}
-
-//Fragment shader para que el bloom se aplique bien  (devuelve negro para que no se vea a traves del objeto)
-float4 BloomPS(VertexShaderOutput input) : COLOR
-{
-    return float4(0.0f,0.0f,0.0f, 1.0f);
+    float4 bloomColor = tex2D(bloomTextureSampler, input.TexCoord);
+    float4 sceneColor = tex2D(s, input.TexCoord);
+    
+    return sceneColor + bloomColor;
+    //return bloomColor;
 }
 
 technique BasicColorDrawing
@@ -97,14 +82,5 @@ technique BasicColorDrawing
 	{
 		VertexShader = compile VS_SHADERMODEL MainVS();
 		PixelShader = compile PS_SHADERMODEL MainPS();
-	}
-};
-
-technique Bloom
-{
-	pass P0
-	{
-		VertexShader = compile VS_SHADERMODEL MainVS();
-		PixelShader = compile PS_SHADERMODEL BloomPS();
 	}
 };

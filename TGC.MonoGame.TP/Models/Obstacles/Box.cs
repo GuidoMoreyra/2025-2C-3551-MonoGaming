@@ -26,7 +26,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         private BoundingSphere _boundingSphereLocal;
         private BoundingSphere _boundingSphereWorld;
         public BoundingSphere BoundingSphere => _boundingSphereWorld;
-        
+
 
         public Box(ContentManager content, Matrix worldMatrix, float angle)
         {
@@ -134,6 +134,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
                     effect.Parameters["World"].SetValue(world);
@@ -148,6 +149,31 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             // Dibujar el wireframe de la esfera
             // Color debugColor = Color.Red; // Por ejemplo, rojo
             // BoundingSphereRenderer.Draw(_boundingSphereWorld, view, projection, debugColor);
+        }
+
+        public void DrawBloom(Matrix view, Matrix projection)
+        {
+            foreach (var mesh in _model.Meshes)
+            {
+                var meshWorld = mesh.ParentBone.Transform;
+                var scaleMatrix = Matrix.CreateScale(SCALE);
+                var world = meshWorld * _rotation * scaleMatrix * _worldMatrix;
+
+                foreach (var meshPart in mesh.MeshParts)
+                {
+                    var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["Bloom"];
+                    effect.Parameters["View"].SetValue(view);
+                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["World"].SetValue(world);
+
+                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    {
+                        pass.Apply();
+                    }
+                }
+                mesh.Draw();
+            }
         }
 
         // ✅ Si la caja se mueve, llamá esto con el nuevo worldMatrix
