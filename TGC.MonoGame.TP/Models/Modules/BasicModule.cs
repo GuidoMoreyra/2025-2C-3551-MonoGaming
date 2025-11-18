@@ -26,7 +26,7 @@ internal class BasicModule : IModule
     }
 
 
-    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
+    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition,float elapsedTime)
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)

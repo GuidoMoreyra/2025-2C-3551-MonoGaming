@@ -31,9 +31,9 @@ internal class EscenarioGenerator
         Matrix modulo3 = inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * 2);
         escenario = new List<IModule>
         {
-            new BasicModule(contentManager,inicio),
-            new BasicModule(contentManager,modulo2),
-            new BasicModule(contentManager,modulo3),
+            new PipeModule(contentManager,inicio),
+            new PipeModule(contentManager,modulo2),
+
         };
         lastModule = "Basic";
         for(int index = 3; index <= MAX_MODULES; index++)

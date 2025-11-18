@@ -52,7 +52,7 @@ internal class ShipModule : IModule
 
     }
 
-    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
+    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition,float elapsedTime)
     {
 
         foreach (var mesh in _model.Meshes)

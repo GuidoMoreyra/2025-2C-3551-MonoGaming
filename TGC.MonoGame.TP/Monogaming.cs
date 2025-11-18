@@ -11,6 +11,7 @@ using TGC.MonoGame.TP.Util;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.BaseModels;
 
 
 
@@ -84,6 +85,7 @@ public class MonoGaming : Game
 
     protected override void Initialize()
     {
+
 
         int Width = GraphicsDevice.Viewport.Width;
         int Height = GraphicsDevice.Viewport.Height;
@@ -161,7 +163,7 @@ public class MonoGaming : Game
     protected override void LoadContent()
     {
 
-
+  
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
 
         // check the current state of the MediaPlayer.
@@ -185,13 +187,13 @@ public class MonoGaming : Game
     }
 
 
-    protected override void Update(GameTime gameTime)
-    {
+     protected override void Update(GameTime gameTime)
+     {
         KeyboardState keyboardState = Keyboard.GetState();
 
-        //DebugCamera.Update(gameTime);
-        //_view = DebugCamera.View;
-        //_projection = DebugCamera.Projection;
+        DebugCamera.Update(gameTime);
+        _view = DebugCamera.View;
+        _projection = DebugCamera.Projection;
 
         if (gameState == GameState.Menu)
         {
@@ -206,14 +208,14 @@ public class MonoGaming : Game
         {
             gameState = GameState.GameOver;
             gameOverScreen.setPuntos(puntos);
-            player.Restart();
+           player.Restart();
             puntos = 0;
             multiplicador = 1;
             vueltasAcumulador = 0;
             acumuladorIntermedioPuntos = 0;
             escenarioGenerator.GenerarEscenario(ref escenario);
         }
-        else
+         else
         {
             acumuladorIntermedioPuntos += gameTime.ElapsedGameTime.Milliseconds;
             if ((acumuladorIntermedioPuntos / 1000) >= 1)
@@ -223,29 +225,29 @@ public class MonoGaming : Game
                 puntos += multiplicador;
                 multiplicador = (vueltasAcumulador / 5) + 1;
             }
-            hud.Update(puntos, multiplicador);
+           hud.Update(puntos, multiplicador);
 
             if (keyboardState.IsKeyDown(Keys.Escape) && !_wasPaused)
             {
-                if (gameState == GameState.Playing)
+                 if (gameState == GameState.Playing)
                     gameState = GameState.Paused;
-                else if (gameState == GameState.Paused)
-                    gameState = GameState.Playing;
+               else if (gameState == GameState.Paused)
+                   gameState = GameState.Playing;
             }
-            _wasPaused = keyboardState.IsKeyDown(Keys.Escape);
+           _wasPaused = keyboardState.IsKeyDown(Keys.Escape);
 
             if (gameState == GameState.Playing)
-            {
+        {
                 player.Update(gameTime, ref _view, ref _projection, Content);
-                Matrix aux = Matrix.Invert(_view);
-                CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
+              Matrix aux = Matrix.Invert(_view);
+               CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
                 LightPosition = player.Position + (Vector3.Left * 50) + (Vector3.Down * 3);
-                
+              
                 tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (tiempoAcumulado >= 0.75f)
                 {
                     tiempoAcumulado = 0f;
-                    escenarioGenerator.AvanzarEscenario(ref escenario);
+                   escenarioGenerator.AvanzarEscenario(ref escenario);
                 }
                 foreach (var modulo in escenario)
                 {
@@ -259,15 +261,15 @@ public class MonoGaming : Game
                 pauseMenu.Update(gameTime);
             }
         }
-
-        // if (keyboardState.IsKeyDown(Keys.Escape))
-        // {
-        //     Exit();
-        // }
     }
+ 
+
 
     protected override void Draw(GameTime gameTime)
     {
+
+
+        float elapsedTime = (float)gameTime.TotalGameTime.TotalSeconds;
         //El fondo es negro
         GraphicsDevice.Clear(Color.Black);
 
@@ -286,10 +288,10 @@ public class MonoGaming : Game
         else
         {
 
-            player.Draw(_view, _projection, CameraPosition, LightPosition);
+            player.Draw(_view, _projection, CameraPosition, LightPosition,GraphicsDevice);
             foreach (IModule module in escenario)
             {
-                module.Draw(_view, _projection, CameraPosition);
+                module.Draw(_view, _projection, CameraPosition,elapsedTime);
                 //new Box(Content, Matrix.Identity * Matrix.CreateTranslation(LightPosition), 0.0f).Draw(_view, _projection);
             }
             hud.Draw(spriteBatch);

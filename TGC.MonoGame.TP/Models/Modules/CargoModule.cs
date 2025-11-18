@@ -30,7 +30,7 @@ internal class CargoModule : IModule
     }
 
 
-    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
+    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition,float elapsedTime)
     {
 
         var ajusteDeTraslacion_ = Matrix.CreateTranslation(Vector3.Right * ajusteDeTraslacionZ + Vector3.Down * ajusteDeTraslacionY);
