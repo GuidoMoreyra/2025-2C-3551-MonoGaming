@@ -120,6 +120,36 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
+                    effect.Parameters["View"].SetValue(view);
+                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["World"].SetValue(world);
+                    effect.Parameters["eyePosition"].SetValue(cameraPosition);
+
+                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    {
+                        pass.Apply();
+                    }
+                }
+                mesh.Draw();
+            }
+        }
+
+        public void DrawBloom(Matrix view, Matrix projection)
+        {
+            var rotationXMat = Matrix.CreateRotationX(MathHelper.ToRadians(rotacionX));
+            var rotationYMat = Matrix.CreateRotationY(MathHelper.ToRadians(rotacionY));
+
+            foreach (var mesh in _model.Meshes)
+            {
+                var meshWorld = mesh.ParentBone.Transform;
+                var scaleMatrix = Matrix.CreateScale(SCALE);
+                var world = meshWorld * rotationYMat * rotationXMat * scaleMatrix * _worldMatrix;
+
+                foreach (var meshPart in mesh.MeshParts)
+                {
+                    var effect = meshPart.Effect;
+                    effect.CurrentTechnique = effect.Techniques["Bloom"];
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
                     effect.Parameters["World"].SetValue(world);

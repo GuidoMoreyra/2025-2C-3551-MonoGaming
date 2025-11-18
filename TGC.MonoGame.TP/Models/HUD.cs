@@ -11,7 +11,7 @@ namespace TGC.MonoGame.TP.Models
         private int multiplicador = 1;
         public HUD(ContentManager content)
         {
-            _font = content.Load<SpriteFont>(MonoGaming.ContentFolderSpriteFonts + "GameFont");
+            _font = content.Load<SpriteFont>(MonoGaming.ContentFolderSpriteFonts + "GameFontBig");
         }
 
         public void Update(int puntos, int multiplicador)

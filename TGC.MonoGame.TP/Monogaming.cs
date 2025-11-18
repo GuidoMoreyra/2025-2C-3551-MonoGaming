@@ -11,6 +11,7 @@ using TGC.MonoGame.TP.Util;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using TGC.MonoGame.TP.Models.Obstacles;
+using System;
 
 
 
@@ -29,21 +30,21 @@ public class MonoGaming : Game
 
     private readonly GraphicsDeviceManager _graphics;
 
-    private Microsoft.Xna.Framework.Matrix _projection;
-    private Microsoft.Xna.Framework.Matrix _view;
+    private Matrix _projection;
+    private Matrix _view;
 
     private List<IModule> escenario;
     private EscenarioGenerator escenarioGenerator;
 
     private const float VELOCIDAD = 20f;
 
+    private int modulosRecorridos = 0;
     private int puntos = 0;
     private int multiplicador = 1;
     private double acumuladorIntermedioPuntos = 0;
     private int vueltasAcumulador = 0;
     private PlayerShip player;
 
-    float tiempoAcumulado = 0f;
     private Vector3 CameraPosition;
     private Vector3 LightPosition;
     public static Color LightAmbientColor = new Color(0.25f, 0.0f, 0.0f);
@@ -60,6 +61,16 @@ public class MonoGaming : Game
     private Menu mainMenu;
     private HUD hud;
     private GameOverScreen gameOverScreen;
+
+    private RenderTarget2D _firstPassBloomRenderTarget;
+
+    private RenderTarget2D _mainSceneRenderTarget;
+
+    private RenderTarget2D _secondPassBloomRenderTarget;
+
+    private Effect _gaussianBlur;
+
+    private Effect _bloomPost;
 
     public MonoGaming()
     {
@@ -150,6 +161,16 @@ public class MonoGaming : Game
         hud = new HUD(Content);
         gameOverScreen = new GameOverScreen(Content, menuButtons, spriteBatch, puntos, new Vector2(Width / 2, Height / 2));
 
+        _mainSceneRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.Depth24Stencil8, 0,
+            RenderTargetUsage.DiscardContents);
+        _firstPassBloomRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.Depth24Stencil8, 0,
+            RenderTargetUsage.DiscardContents);
+        _secondPassBloomRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
+            RenderTargetUsage.DiscardContents);
+
         // Configuramos nuestras matrices de la escena.
         _view = Matrix.CreateLookAt(new Vector3(0, 0, 300), Vector3.Zero, Vector3.Up);
         _projection =
@@ -160,7 +181,11 @@ public class MonoGaming : Game
 
     protected override void LoadContent()
     {
+        _gaussianBlur = Content.Load<Effect>(ContentFolderEffects + "GaussianBlur");
+        _gaussianBlur.Parameters["screenSize"]
+                .SetValue(new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height));
 
+        _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
 
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
 
@@ -169,7 +194,7 @@ public class MonoGaming : Game
         {
             MediaPlayer.Stop(); // stop current audio playback if playing or paused.
         }
-
+        MediaPlayer.IsRepeating = true;
         // Play the selected song reference.
         MediaPlayer.Play(song);
 
@@ -211,6 +236,7 @@ public class MonoGaming : Game
             multiplicador = 1;
             vueltasAcumulador = 0;
             acumuladorIntermedioPuntos = 0;
+            modulosRecorridos = 0;
             escenarioGenerator.GenerarEscenario(ref escenario);
         }
         else
@@ -240,13 +266,22 @@ public class MonoGaming : Game
                 Matrix aux = Matrix.Invert(_view);
                 CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
                 LightPosition = player.Position + (Vector3.Left * 50) + (Vector3.Down * 3);
-                
-                tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (tiempoAcumulado >= 0.75f)
+
+                if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / EscenarioGenerator.DISTANCE_BETWEEN_MODULES))
                 {
-                    tiempoAcumulado = 0f;
-                    escenarioGenerator.AvanzarEscenario(ref escenario);
+                    if (modulosRecorridos != 0)
+                    {
+                        escenarioGenerator.AvanzarEscenario(ref escenario);
+                    }
+                    modulosRecorridos++;
                 }
+
+                // tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                // if (tiempoAcumulado >= 0.55f)
+                // {
+                //     tiempoAcumulado = 0f;
+                //     escenarioGenerator.AvanzarEscenario(ref escenario);
+                // }
                 foreach (var modulo in escenario)
                 {
                     modulo.Update(gameTime, player, escenarioGenerator, ref escenario);
@@ -268,8 +303,9 @@ public class MonoGaming : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        //El fondo es negro
+
         GraphicsDevice.Clear(Color.Black);
+
 
         //TIENE QUE IR ANTES DEL DRAW PRINCIPAL
         background.Draw(GraphicsDevice);
@@ -286,6 +322,17 @@ public class MonoGaming : Game
         else
         {
 
+            //Se dibuja la escena principal en el rendertarget main
+            #region Pass 1
+
+            // Use the default blend and depth configuration
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            GraphicsDevice.BlendState = BlendState.Opaque;
+
+            // Set the main render target, here we'll draw the base scene
+            GraphicsDevice.SetRenderTarget(_mainSceneRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
+
             player.Draw(_view, _projection, CameraPosition, LightPosition);
             foreach (IModule module in escenario)
             {
@@ -299,8 +346,51 @@ public class MonoGaming : Game
                 //TIENE QUE IR DESPUES DEL DRAW PRINICPAL
                 pauseMenu.Draw(GraphicsDevice);
             }
-        }
 
+            #endregion
+
+            #region Pass 2
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+            // Set the render target as our bloomRenderTarget, we are drawing the bloom color into this texture
+            GraphicsDevice.SetRenderTarget(_firstPassBloomRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
+
+            player.DrawBloom(_view, _projection);
+            foreach (IModule module in escenario)
+            {
+                module.DrawBloom(_view, _projection);
+            }
+
+            #endregion
+
+            #region GaussianBlur
+            GraphicsDevice.DepthStencilState = DepthStencilState.None;
+
+            GraphicsDevice.SetRenderTarget(_secondPassBloomRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
+
+            _gaussianBlur.Parameters["baseTexture"].SetValue(_firstPassBloomRenderTarget);
+            Quad.Draw(_gaussianBlur, GraphicsDevice);
+
+            #endregion
+
+            #region Final
+
+            // Set the depth configuration as none, as we don't use depth in this pass
+            GraphicsDevice.DepthStencilState = DepthStencilState.None;
+
+            // Set the render target as null, we are drawing into the screen now!
+            GraphicsDevice.SetRenderTarget(null);
+            GraphicsDevice.Clear(Color.Black);
+
+            _bloomPost.Parameters["Texture"]?.SetValue(_mainSceneRenderTarget);
+            _bloomPost.Parameters["bloomTexture"]?.SetValue(_secondPassBloomRenderTarget);
+
+            Quad.Draw(_bloomPost, GraphicsDevice);
+
+            #endregion
+        }
 
         //Cada modelo deberia tener su propio draw.
         //A menos que sea para prueba no deberian haber dibujos en este metodo

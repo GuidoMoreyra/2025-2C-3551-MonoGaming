@@ -93,4 +93,12 @@ internal class CargoModule : IModule
     {
         return "Asteroid";
     }
+
+    public void DrawBloom(Matrix view, Matrix projection)
+    {
+        foreach (CargoShip ship in obstacles)
+        {
+            ship.DrawBloom(view, projection);
+        }
+    }
 }

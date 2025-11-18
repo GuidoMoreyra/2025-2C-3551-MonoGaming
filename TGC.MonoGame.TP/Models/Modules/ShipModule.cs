@@ -104,4 +104,12 @@ internal class ShipModule : IModule
     {
         return "Corridor";
     }
+
+    public void DrawBloom(Matrix view, Matrix projection)
+    {
+        foreach (Ship ship in obstacles)
+        {
+            ship.DrawBloom(view, projection);
+        }
+    }
 }

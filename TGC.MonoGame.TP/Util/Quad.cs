@@ -25,5 +25,21 @@ namespace TGC.MonoGame.TP.Util
         {
             return indices;
         }
+
+        public static void Draw(Effect effect, GraphicsDevice graphicsDevice)
+        {
+             foreach (var pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserIndexedPrimitives(
+                    PrimitiveType.TriangleList,
+                    Quad.GetVertices(),
+                    0,
+                    4,
+                    Quad.GetIndices(),
+                    0, 2
+                );
+            }
+        }
     }
 }

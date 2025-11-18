@@ -132,11 +132,32 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     return finalColor;
 }
 
-technique BasicColorDrawing
+float4 BloomPS(VertexShaderOutput input) : COLOR
+{
+    float4 color = tex2D(s, input.TexCoord);
+    
+    //El targetColor es el azul de la cabina
+    float distanceToTargetColor = distance(color.rgb, float3(0.11f, 0.192f, 0.333f));
+    
+    float filter = step(distanceToTargetColor, 0.15);
+    
+    return float4(color.rgb * filter, 1.0f);
+}
+
+technique MainTechnique
 {
 	pass P0
 	{
 		VertexShader = compile VS_SHADERMODEL MainVS();
 		PixelShader = compile PS_SHADERMODEL MainPS();
+	}
+};
+
+technique Bloom
+{
+	pass P0
+	{
+		VertexShader = compile VS_SHADERMODEL MainVS();
+		PixelShader = compile PS_SHADERMODEL BloomPS();
 	}
 };
