@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using TGC.MonoGame.TP.Models.BaseModels;
+using TGC.MonoGame.TP.Models.Modules;
 
 
 namespace TGC.MonoGame.TP.Models
@@ -19,17 +20,21 @@ namespace TGC.MonoGame.TP.Models
         public Vector3 Position { get; set; }
         private Model _model;
 
+        private Escudo escudo;
+
         private int cantidad_de_balas = 10;
         public List<Proyectil> proyectiles = new List<Proyectil>();
 
-        private float tiempoAcumulado = 0f;
+        private float tiempoAcumuladoEscudo = 0f;
+        private float tiempoAcumuladoBalas = 0f;
         private const float VELOCIDAD = 28.25F;
         private const float VELOCIDAD_DE_GIRO = 180F;
         private const float TIME_BETWEEN_SHOTS = 0.5f;
         private const float SCALE = 0.01f;
         private const float ALTURA_MIN = -5f;
         private const float ALTURA_MAX = 10f;
-
+        private const float DURACION_ESCUDO = 3f;
+        public Boolean tieneEscudo = true;
         private const float DISTANCIA_MIN = -15f;
         private const float DISTANCIA_MAX = 15f;
 
@@ -50,6 +55,8 @@ namespace TGC.MonoGame.TP.Models
 
         public PlayerShip(ContentManager content)
         {
+
+            escudo = new Escudo(content,_worldMatrix);
             Position = Vector3.Zero;
             sonidoColision = content.Load<SoundEffect>(MonoGaming.ContentFolderSounds + "ExplosionJugador");
 
@@ -108,7 +115,7 @@ namespace TGC.MonoGame.TP.Models
             _worldBoundingBox = BoundingBox.CreateFromPoints(transformedCorners);
         }
 
-        public void Draw(Matrix view, Matrix projection, Vector3 CameraPosition, Vector3 LightPosition)
+        public void Draw(Matrix view, Matrix projection, Vector3 CameraPosition, Vector3 LightPosition,GraphicsDevice graphicsDevice)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -135,10 +142,13 @@ namespace TGC.MonoGame.TP.Models
                 }
                 mesh.Draw();
             }
+            
             foreach (var proyectil in proyectiles)
             {
                 proyectil.Draw(view, projection);
             }
+            if(tieneEscudo == true)
+                escudo.Draw(view,projection,_worldMatrix,graphicsDevice);
         }
 
         public void DrawBloom(Matrix view, Matrix projection)
@@ -182,7 +192,6 @@ namespace TGC.MonoGame.TP.Models
             Vector3 targetPosition = (BoundingBox.Min + BoundingBox.Max) / 2f;
             Vector3 cameraPosition = targetPosition + cameraOffset;
 
-            // Limitar altura de la cámara
             cameraPosition.Y = MathHelper.Clamp(cameraPosition.Y, ALTURA_MIN, ALTURA_MAX);
 
             Vector3 upVector = Vector3.Up;
@@ -201,19 +210,28 @@ namespace TGC.MonoGame.TP.Models
 
             proyectiles.RemoveAll(o => o.estaDestruido);
 
-            tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (cantidad_de_balas > 0 && tiempoAcumulado >= TIME_BETWEEN_SHOTS)
+            tiempoAcumuladoBalas += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            tiempoAcumuladoEscudo += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (cantidad_de_balas > 0 && tiempoAcumuladoBalas >= TIME_BETWEEN_SHOTS)
             {
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
                     cantidad_de_balas--;
-                    tiempoAcumulado = 0f;
+                    tiempoAcumuladoBalas = 0f;
                     proyectiles.Add(new Proyectil(content, _worldMatrix, gameTime.TotalGameTime.TotalSeconds));
                 }
 
             }
-
-
+            if (keyboardState.IsKeyDown(Keys.E) && tieneEscudo == false )
+                {
+                    this.tieneEscudo = true;
+                    tiempoAcumuladoEscudo = 0f;
+    
+                }
+            if (tiempoAcumuladoEscudo >=  DURACION_ESCUDO)
+            {
+                this.tieneEscudo = false;
+            }
 
             if (keyboardState.IsKeyDown(Keys.Left))
                 angulo -= VELOCIDAD_DE_GIRO * (float)gameTime.ElapsedGameTime.TotalSeconds;

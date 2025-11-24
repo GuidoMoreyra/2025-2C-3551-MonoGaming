@@ -168,7 +168,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             rotacionX += velocidadDeRotacion * deltaTime;
 
-            if (this.BoundingBox.Intersects(player.BoundingBox))
+            if (this.BoundingBox.Intersects(player.BoundingBox) && !player.tieneEscudo)
             {
                 player.Destroy();
                 Console.WriteLine("Caja");

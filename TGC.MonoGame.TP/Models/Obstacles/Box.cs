@@ -186,7 +186,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 
         public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
         {
-            if (BoundingSphere.Intersects(player.BoundingBox))
+            if (BoundingSphere.Intersects(player.BoundingBox) && !player.tieneEscudo)
             {
                 player.Destroy();
                 Console.WriteLine("Caja");
