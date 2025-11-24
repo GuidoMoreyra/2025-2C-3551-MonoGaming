@@ -341,12 +341,6 @@ public class MonoGaming : Game
             }
             hud.Draw(spriteBatch);
 
-            if (gameState == GameState.Paused)
-            {
-                //TIENE QUE IR DESPUES DEL DRAW PRINICPAL
-                pauseMenu.Draw(GraphicsDevice);
-            }
-
             #endregion
 
             #region Pass 2
@@ -390,6 +384,12 @@ public class MonoGaming : Game
             Quad.Draw(_bloomPost, GraphicsDevice);
 
             #endregion
+
+            if (gameState == GameState.Paused)
+            {
+                //TIENE QUE IR DESPUES DEL DRAW PRINICPAL
+                pauseMenu.Draw(GraphicsDevice);
+            }
         }
 
         //Cada modelo deberia tener su propio draw.

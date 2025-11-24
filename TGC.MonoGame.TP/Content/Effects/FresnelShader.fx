@@ -88,7 +88,25 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 //Fragment shader para que el bloom se aplique bien  (devuelve negro para que no se vea a traves del objeto)
 float4 BloomPS(VertexShaderOutput input) : COLOR
 {
-    return float4(0.0f,0.0f,0.0f, 1.0f);
+    float3 fresnelColor = float3(1.0f, 0.576f, 0.0f);
+
+    float3 normal = normalize(input.Normal.xyz);
+
+    float4 texelColor = tex2D(s,input.TexCoord);
+
+
+    float fresnel = dot(normal, normalize(eyePosition - input.WorldPosition.xyz));
+    fresnel = saturate(1 - fresnel);
+
+    float3 finalFresnel = fresnel * fresnelColor;
+
+    float3 finalColor = texelColor.rgb + finalFresnel;
+
+    float distanceToTargetColor = distance(finalColor, float3(1.0f, 0.576f, 0.0f));
+    
+    float filter = step(distanceToTargetColor, 0.30);
+    
+    return float4(finalColor * filter, 1.0f);
 }
 
 technique BasicColorDrawing
