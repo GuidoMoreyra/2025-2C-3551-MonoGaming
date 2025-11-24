@@ -9,21 +9,26 @@ namespace TGC.MonoGame.TP.Models
 {
     internal class PauseMenu
     {
-        private Effect _effect;
-        List<RectangleButton> _pauseButtons;
-        MouseState _previousMouse;
-        MouseState _currentMouse;
-        SpriteBatch spriteBatch;
-        public PauseMenu(ContentManager content, List<RectangleButton> buttons, SpriteBatch spriteBatch)
+        private readonly Effect _effect;
+        private readonly List<RectangleButton> _pauseButtons;
+        private readonly SpriteBatch _spriteBatch;
+        private readonly GraphicsDevice _graphicsDevice;
+        private MouseState _previousMouse;
+        private MouseState _currentMouse;
+        public PauseMenu(ContentManager content, List<RectangleButton> buttons, SpriteBatch spriteBatch, GraphicsDevice graphicsDevice)
         {
             _effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
+            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
+            _effect.Parameters["World"].SetValue(Matrix.Identity);
+            _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
 
             // Inicializa la lista de botones
             _pauseButtons = buttons;
-            this.spriteBatch = spriteBatch;
+            _spriteBatch = spriteBatch;
+            _graphicsDevice = graphicsDevice;
         }
 
-        public void Update(GameTime gameTime)
+        public void Update()
         {
             _previousMouse = _currentMouse;
             _currentMouse = Mouse.GetState();
@@ -33,30 +38,23 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void Draw(GraphicsDevice graphicsDevice)
+        public void Draw()
         {
-            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
-            _effect.Parameters["World"].SetValue(Matrix.Identity);
-            _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
+            _graphicsDevice.BlendState = BlendState.AlphaBlend;
 
-            graphicsDevice.DepthStencilState = DepthStencilState.None;
-            graphicsDevice.BlendState = BlendState.AlphaBlend;
+            Quad.Draw(_effect, _graphicsDevice);
 
-            // 4. Dibujar el Quad
-            Quad.Draw(_effect, graphicsDevice);
+           _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
-            // 5. Restaurar matrices y Z-Buffer para la escena 3D
-            graphicsDevice.DepthStencilState = DepthStencilState.Default;
-
-            spriteBatch.Begin(blendState: BlendState.AlphaBlend); // ¡Importante activar AlphaBlend!
+            _spriteBatch.Begin(blendState: BlendState.AlphaBlend);
             foreach (var button in _pauseButtons)
             {
-                button.Draw(spriteBatch);
+                button.Draw();
             }
 
-            spriteBatch.End();
+            _spriteBatch.End();
 
-            graphicsDevice.BlendState = BlendState.Opaque;
+            _graphicsDevice.BlendState = BlendState.Opaque;
         }
     }
 }

@@ -245,15 +245,11 @@ namespace TGC.MonoGame.TP.Models
             if (keyboardState.IsKeyDown(Keys.D))
                 nuevoMovimiento += Vector3.Forward * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (keyboardState.IsKeyDown(Keys.G) && toogleGodModeActive)
+            if (keyboardState.IsKeyDown(Keys.G) && !toogleGodModeActive)
             {
                 _godMode = !_godMode;
-                toogleGodModeActive = false;
             }
-            else if (keyboardState.IsKeyUp(Keys.G))
-            {
-                toogleGodModeActive = true;
-            }
+            toogleGodModeActive = keyboardState.IsKeyDown(Keys.G);
 
             var traslacion = Matrix.CreateTranslation(nuevoMovimiento);
             _worldMatrix = _worldMatrix * traslacion;

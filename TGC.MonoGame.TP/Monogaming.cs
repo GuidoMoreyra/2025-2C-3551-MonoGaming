@@ -1,20 +1,12 @@
 ﻿using System.Collections.Generic;
-
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-
-using TGC.MonoGame.TP.CameraDebug;
-using TGC.MonoGame.TP.Models.Modules;
 using TGC.MonoGame.TP.Models;
 using TGC.MonoGame.TP.Util;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
-using System;
-using TGC.MonoGame.TP.Models.Modules.Contract;
 using TGC.MonoGame.TP.Models.BaseModels;
-
-
 
 namespace TGC.MonoGame.TP;
 
@@ -27,16 +19,17 @@ public class MonoGaming : Game
     public const string ContentFolderSpriteFonts = "SpriteFonts/";
     public const string ContentFolderTextures = "Textures/";
 
-    private Camera DebugCamera { get; set; }
+    public static Color LightAmbientColor = new(0.25f, 0.0f, 0.0f);
+    public static Color LightDiffuseColor = Color.LightYellow;
+    public static Color LightSpecularColor = Color.White;
 
     private readonly GraphicsDeviceManager _graphics;
+    private Vector2 _viewportDimensions;
 
     private Matrix _projection;
     private Matrix _view;
 
     private EscenarioGenerator escenarioGenerator;
-
-    private const float VELOCIDAD = 20f;
 
     private int puntos = 0;
     private int multiplicador = 1;
@@ -46,9 +39,6 @@ public class MonoGaming : Game
 
     private Vector3 CameraPosition;
     private Vector3 LightPosition;
-    public static Color LightAmbientColor = new Color(0.25f, 0.0f, 0.0f);
-    public static Color LightDiffuseColor = Color.LightYellow;
-    public static Color LightSpecularColor = Color.White;
 
     private bool _wasPaused = false;
     private GameState gameState = GameState.Menu;
@@ -85,18 +75,15 @@ public class MonoGaming : Game
         Content.RootDirectory = "Content";
         // Hace que el mouse sea visible.
         IsMouseVisible = true;
-
-
     }
 
 
     protected override void Initialize()
     {
-        int Width = GraphicsDevice.Viewport.Width;
-        int Height = GraphicsDevice.Viewport.Height;
-
+        _viewportDimensions = new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         spriteBatch = new SpriteBatch(GraphicsDevice);
-        // La logica de inicializacion que no depende del contenido se recomienda poner en este metodo.
+
+        //Se posiciona la camara y la luz para el menu
         LightPosition = Vector3.One * 1000;
         CameraPosition = Vector3.One;
 
@@ -112,60 +99,14 @@ public class MonoGaming : Game
         escenarioGenerator = new EscenarioGenerator();
         escenarioGenerator.GenerarEscenario();
 
-        //Como el estado y Exit() solo existen es esta clase, se tienen que crear aca
-        List<RectangleButton> pauseButtons = new List<RectangleButton>();
-
-        // Crear el botón "Reanudar"
-        RectangleButton resumeButton = new RectangleButton(
-            Content,
-            "Reanudar",
-            new Rectangle(MathHelper.Max(0, (Width / 2) - 400 - (384 / 2)), Height / 2, 384, 128)); // Posición X, Y, Ancho, Alto
-
-        // Asignar la acción que debe ejecutar (usando una función lambda)
-        resumeButton.OnClick = () =>
-        {
-            gameState = GameState.Playing; // Cambia el estado del juego
-        };
-
-        pauseButtons.Add(resumeButton);
-
-        // Crear el botón "Salir"
-        RectangleButton quitButton = new RectangleButton(
-            Content,
-            "Salir del juego",
-            new Rectangle(MathHelper.Min(Width, (Width / 2) + 400), Height / 2, 384, 128));
-
-        quitButton.OnClick = () =>
-        {
-            Exit(); // Cierra el juego (o vuelve al menú principal)
-        };
-
-        pauseButtons.Add(quitButton);
-
-        // BOTONES MENU PRINCIPAL
-
-        List<RectangleButton> menuButtons = new List<RectangleButton>();
-
-        RectangleButton playButton = new RectangleButton(
-            Content,
-            "Jugar",
-            new Rectangle(MathHelper.Max(0, (Width / 2) - 400 - (384 / 2)), Height / 2, 384, 128)); // Posición X, Y, Ancho, Alto
-
-        playButton.OnClick = () =>
-        {
-            gameState = GameState.Playing; // Cambia el estado del juego
-        };
-
-        menuButtons.Add(playButton);
-        menuButtons.Add(quitButton);
-
-        background = new Background(Content);
+        background = new Background(Content, GraphicsDevice);
         player = new PlayerShip(Content);
-        pauseMenu = new PauseMenu(Content, pauseButtons, spriteBatch);
-        mainMenu = new Menu(menuButtons, spriteBatch);
-        hud = new HUD(Content);
-        gameOverScreen = new GameOverScreen(Content, menuButtons, spriteBatch, puntos, new Vector2(Width / 2, Height / 2));
+        hud = new HUD(Content, spriteBatch);
+        pauseMenu = GeneratePauseMenu();
+        mainMenu = GenerateMenu();
+        gameOverScreen = GenerateGameOverScreen();
 
+        //Creo render targets
         _mainSceneRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
             GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.Depth24Stencil8, 0,
             RenderTargetUsage.DiscardContents);
@@ -184,11 +125,120 @@ public class MonoGaming : Game
         base.Initialize();
     }
 
+    private PauseMenu GeneratePauseMenu()
+    {
+        //Como el estado y Exit() solo existen es esta clase, se tienen que crear aca
+        List<RectangleButton> pauseButtons = [];
+
+        // Crear el botón "Reanudar"
+        RectangleButton resumeButton = new(
+            Content,
+            "Reanudar",
+            new Rectangle(MathHelper.Max(0, ((int)(_viewportDimensions.X / 2)) - 400 - (384 / 2)), (int)_viewportDimensions.Y / 2, 384, 128), // Posición X, Y, Ancho, Alto
+            spriteBatch)
+        {
+            // Asignar la acción que debe ejecutar (usando una función lambda)
+            OnClick = () =>
+                {
+                    gameState = GameState.Playing; // Cambia el estado del juego
+                }
+        };
+
+        pauseButtons.Add(resumeButton);
+
+        // Crear el botón "Salir"
+        RectangleButton quitButton = new(
+            Content,
+            "Salir del juego",
+            new Rectangle(MathHelper.Min((int)_viewportDimensions.X, ((int)(_viewportDimensions.X / 2)) + 400), (int)_viewportDimensions.Y / 2, 384, 128),
+            spriteBatch)
+        {
+            OnClick = () =>
+            {
+                Exit(); // Cierra el juego
+            }
+        };
+
+        pauseButtons.Add(quitButton);
+
+        return new PauseMenu(Content, pauseButtons, spriteBatch, GraphicsDevice);
+    }
+
+    private Menu GenerateMenu()
+    {
+        List<RectangleButton> menuButtons = [];
+
+        // Crear el botón "Salir"
+        RectangleButton quitButton = new(
+            Content,
+            "Salir del juego",
+            new Rectangle(MathHelper.Min((int)_viewportDimensions.X, ((int)(_viewportDimensions.X / 2)) + 400), (int)_viewportDimensions.Y / 2, 384, 128),
+            spriteBatch)
+        {
+            OnClick = () =>
+            {
+                Exit(); // Cierra el juego
+            }
+        };
+
+        RectangleButton playButton = new(
+            Content,
+            "Jugar",
+            new Rectangle(MathHelper.Max(0, ((int)(_viewportDimensions.X / 2)) - 400 - (384 / 2)), (int)_viewportDimensions.Y / 2, 384, 128),
+            spriteBatch)
+        {
+            OnClick = () =>
+            {
+                gameState = GameState.Playing; // Cambia el estado del juego
+            }
+        };
+
+        menuButtons.Add(playButton);
+        menuButtons.Add(quitButton);
+
+        return new Menu(menuButtons, spriteBatch);
+    }
+
+    private GameOverScreen GenerateGameOverScreen()
+    {
+        List<RectangleButton> gameOverButtons = [];
+
+        // Crear el botón "Salir"
+        RectangleButton quitButton = new(
+            Content,
+            "Salir del juego",
+            new Rectangle(MathHelper.Min((int)_viewportDimensions.X, ((int)(_viewportDimensions.X / 2)) + 400), (int)_viewportDimensions.Y / 2, 384, 128),
+            spriteBatch)
+        {
+            OnClick = () =>
+            {
+                Exit(); // Cierra el juego
+            }
+        };
+
+        RectangleButton playButton = new(
+            Content,
+            "Jugar",
+            new Rectangle(MathHelper.Max(0, ((int)(_viewportDimensions.X / 2)) - 400 - (384 / 2)), (int)_viewportDimensions.Y / 2, 384, 128),
+            spriteBatch)
+        {
+            OnClick = () =>
+            {
+                gameState = GameState.Playing; // Cambia el estado del juego
+            }
+        };
+
+        gameOverButtons.Add(playButton);
+        gameOverButtons.Add(quitButton);
+
+        return new GameOverScreen(Content, gameOverButtons, spriteBatch, _viewportDimensions / 2, GraphicsDevice);
+    }
+
     protected override void LoadContent()
     {
         _gaussianBlur = Content.Load<Effect>(ContentFolderEffects + "GaussianBlur");
         _gaussianBlur.Parameters["screenSize"]
-                .SetValue(new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height));
+                .SetValue(_viewportDimensions);
 
 
         _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
@@ -218,7 +268,7 @@ public class MonoGaming : Game
 
         if (gameState == GameState.Menu)
         {
-            mainMenu.Update(gameTime);
+            mainMenu.Update();
         }
         else if (gameState == GameState.GameOver)
         {
@@ -228,7 +278,7 @@ public class MonoGaming : Game
         else if (player.EstaDestruido())
         {
             gameState = GameState.GameOver;
-            gameOverScreen.setPuntos(puntos);
+            gameOverScreen.SetPuntos(puntos);
             player.Restart();
             puntos = 0;
             multiplicador = 1;
@@ -270,7 +320,7 @@ public class MonoGaming : Game
             }
             else
             {
-                pauseMenu.Update(gameTime);
+                pauseMenu.Update();
             }
         }
     }
@@ -285,13 +335,13 @@ public class MonoGaming : Game
 
         if (gameState == GameState.Menu)
         {
-            background.Draw(GraphicsDevice);
+            background.Draw();
             mainMenu.Draw(_view * _projection, LightPosition, CameraPosition);
         }
         else if (gameState == GameState.GameOver)
         {
-            background.Draw(GraphicsDevice);
-            gameOverScreen.Draw(GraphicsDevice);
+            background.Draw();
+            gameOverScreen.Draw();
 
         }
         else
@@ -310,12 +360,12 @@ public class MonoGaming : Game
 
             var viewProjection = _view * _projection;
 
-            background.Draw(GraphicsDevice);
+            background.Draw();
 
             player.Draw(viewProjection, CameraPosition, LightPosition, GraphicsDevice);
 
             escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime);
-            hud.Draw(spriteBatch);
+            hud.Draw();
 
             #endregion
 
@@ -360,7 +410,7 @@ public class MonoGaming : Game
             if (gameState == GameState.Paused)
             {
                 //TIENE QUE IR DESPUES DEL DRAW PRINICPAL
-                pauseMenu.Draw(GraphicsDevice);
+                pauseMenu.Draw();
             }
         }
 

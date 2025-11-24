@@ -6,12 +6,24 @@ namespace TGC.MonoGame.TP.Models
 {
     internal class HUD
     {
-        private SpriteFont _font;
-        private int puntos = 0;
-        private int multiplicador = 1;
-        public HUD(ContentManager content)
+        private readonly SpriteFont _font;
+        private readonly SpriteBatch _spriteBatch;
+        private readonly Vector2 _puntosPosition;
+        private readonly Vector2 _multplicadorPosition;
+        private int puntos;
+        private int multiplicador;
+        public HUD(ContentManager content, SpriteBatch spriteBatch)
         {
+            puntos = 0;
+            multiplicador = 1;
+
             _font = content.Load<SpriteFont>(MonoGaming.ContentFolderSpriteFonts + "GameFontBig");
+
+            Vector2 puntosSize = _font.MeasureString("Puntos: ");
+            _puntosPosition = Vector2.Zero;
+            _multplicadorPosition = new Vector2(0, puntosSize.Y + 5);
+
+            _spriteBatch = spriteBatch;
         }
 
         public void Update(int puntos, int multiplicador)
@@ -20,21 +32,15 @@ namespace TGC.MonoGame.TP.Models
             this.multiplicador = multiplicador;
         }
 
-        public void Draw(SpriteBatch spriteBatch)
+        public void Draw()
         {
-            spriteBatch.Begin();
+            _spriteBatch.Begin();
 
-            // Dibuja el texto centrado
-            Vector2 puntosSize = _font.MeasureString("Puntos: ");
-            Vector2 puntosPosition = Vector2.Zero;
+            _spriteBatch.DrawString(_font, "Puntos: " + puntos, _puntosPosition, Color.LightCyan);
 
-            spriteBatch.DrawString(_font, "Puntos: " + puntos, puntosPosition, Color.LightCyan);
+            _spriteBatch.DrawString(_font, "Mult: " + multiplicador, _multplicadorPosition, Color.LightCyan);
 
-            Vector2 multplicadorPosition = new Vector2(0, puntosSize.Y + 5);
-
-            spriteBatch.DrawString(_font, "Mult: " + multiplicador, multplicadorPosition, Color.LightCyan);
-
-            spriteBatch.End();
+            _spriteBatch.End();
         }
     }
 }

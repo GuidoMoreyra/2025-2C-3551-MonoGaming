@@ -3,37 +3,31 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using TGC.MonoGame.TP.Util;
 
 namespace TGC.MonoGame.TP.Models
 {
     internal class RectangleButton
     {
-        private Rectangle _rectangle;
-        private string _text;
-        private SpriteFont _font;
-        private Texture2D _texture;
-
-        private Color _hoverColor = Color.Yellow; // Color al pasar el mouse
-
+        private readonly string _text;
+        private readonly Rectangle _rectangle;
+        private readonly SpriteFont _font;
+        private readonly Texture2D _texture;
+        private readonly SpriteBatch _spriteBatch;
         public Action OnClick;
 
-        public RectangleButton(ContentManager content, string text, Rectangle rectangle)
+        public RectangleButton(ContentManager content, string text, Rectangle rectangle, SpriteBatch spriteBatch)
         {
             _texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Buttons/RectangleButton");
             _font = content.Load<SpriteFont>(MonoGaming.ContentFolderSpriteFonts + "GameFont");
             _text = text;
             _rectangle = rectangle;
+            _spriteBatch = spriteBatch;
         }
 
         public void Update(MouseState previousMouse, MouseState currentMouse)
         {
-            // 1. Comprobar si el mouse está sobre el botón
             if (_rectangle.Contains(currentMouse.Position))
             {
-
-
-                // 2. Comprobar si se hizo clic (presionado Y soltado sobre el botón)
                 if (currentMouse.LeftButton == ButtonState.Pressed &&
                     previousMouse.LeftButton == ButtonState.Released)
                 {
@@ -43,18 +37,18 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void Draw(SpriteBatch spriteBatch)
+        public void Draw()
         {
-            spriteBatch.Draw(_texture, _rectangle, Color.White * 0.8f); // Fondo con 80% opacidad
+            _spriteBatch.Draw(_texture, _rectangle, Color.White * 0.8f); // Fondo con 80% opacidad
 
             // Dibuja el texto centrado
             Vector2 textSize = _font.MeasureString(_text);
-            Vector2 textPosition = new Vector2(
+            Vector2 textPosition = new(
                 _rectangle.X + (_rectangle.Width / 2) - (textSize.X / 2),
                 _rectangle.Y + (_rectangle.Height / 2) - (textSize.Y / 2)
             );
 
-            spriteBatch.DrawString(_font, _text, textPosition, Color.Black);
+            _spriteBatch.DrawString(_font, _text, textPosition, Color.Black);
         }
     }
 }

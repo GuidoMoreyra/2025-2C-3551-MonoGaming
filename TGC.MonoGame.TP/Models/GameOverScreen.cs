@@ -9,27 +9,34 @@ namespace TGC.MonoGame.TP.Models
 {
     internal class GameOverScreen
     {
-        private Effect _effect;
-        private SpriteFont _font;
-        List<RectangleButton> _pauseButtons;
-        MouseState _previousMouse;
-        MouseState _currentMouse;
-        SpriteBatch spriteBatch;
-        int puntos;
-        Vector2 centroPantalla;
-        public GameOverScreen(ContentManager content, List<RectangleButton> buttons, SpriteBatch spriteBatch, int puntos, Vector2 centroPantalla)
+        private readonly Effect _effect;
+        private readonly SpriteFont _font;
+        private readonly List<RectangleButton> _pauseButtons;
+        private readonly SpriteBatch _spriteBatch;
+        private readonly Vector2 _centroPantalla;
+        private readonly GraphicsDevice _graphicsDevice;
+        private MouseState _previousMouse;
+        private MouseState _currentMouse;
+        private int puntos;
+        
+        public GameOverScreen(ContentManager content, List<RectangleButton> buttons, SpriteBatch spriteBatch, Vector2 centroPantalla, GraphicsDevice graphicsDevice)
         {
-            this.puntos = puntos;
-            this.centroPantalla = centroPantalla;
-            _effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
+            puntos = 0;
+            _centroPantalla = centroPantalla;
             _font = content.Load<SpriteFont>(MonoGaming.ContentFolderSpriteFonts + "GameFont");
+
+            _effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
+            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
+            _effect.Parameters["World"].SetValue(Matrix.Identity);
+            _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
 
             // Inicializa la lista de botones
             _pauseButtons = buttons;
-            this.spriteBatch = spriteBatch;
+            _spriteBatch = spriteBatch;
+            _graphicsDevice = graphicsDevice;
         }
 
-        public void setPuntos(int puntos)
+        public void SetPuntos(int puntos)
         {
             this.puntos = puntos;
         }
@@ -44,43 +51,25 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void Draw(GraphicsDevice graphicsDevice)
+        public void Draw()
         {
-            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
-            _effect.Parameters["World"].SetValue(Matrix.Identity);
-            _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
+            _graphicsDevice.BlendState = BlendState.AlphaBlend;
 
-            graphicsDevice.DepthStencilState = DepthStencilState.None;
-            graphicsDevice.BlendState = BlendState.AlphaBlend;
+            Quad.Draw(_effect, _graphicsDevice);
 
-            // 4. Dibujar el Quad
-            foreach (var pass in _effect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserIndexedPrimitives(
-                    PrimitiveType.TriangleList,
-                    Quad.GetVertices(),
-                    0,
-                    4,
-                    Quad.GetIndices(),
-                    0, 2
-                );
-            }
+            _spriteBatch.Begin(blendState: BlendState.AlphaBlend);
 
-            // 5. Restaurar matrices y Z-Buffer para la escena 3D
-            graphicsDevice.DepthStencilState = DepthStencilState.Default;
-
-            spriteBatch.Begin(blendState: BlendState.AlphaBlend); // ¡Importante activar AlphaBlend!
-
-            Vector2 puntosPosicion = new Vector2(centroPantalla.X - (_font.MeasureString("Puntos: ").X / 2), centroPantalla.Y / 2);
-            spriteBatch.DrawString(_font, "Puntos: " + puntos, puntosPosicion, Color.Red);
+            Vector2 puntosPosicion = new(_centroPantalla.X - (_font.MeasureString("Puntos: ").X / 2), _centroPantalla.Y / 2);
+            _spriteBatch.DrawString(_font, "Puntos: " + puntos, puntosPosicion, Color.Red);
 
             foreach (var button in _pauseButtons)
             {
-                button.Draw(spriteBatch);
+                button.Draw();
             }
 
-            spriteBatch.End();
+            _spriteBatch.End();
+
+            _graphicsDevice.BlendState = BlendState.Opaque;
         }
     }
 }

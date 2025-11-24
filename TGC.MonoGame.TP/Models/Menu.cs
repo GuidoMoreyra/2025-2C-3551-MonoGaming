@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Util;
 
 namespace TGC.MonoGame.TP.Models
 {
@@ -12,22 +10,28 @@ namespace TGC.MonoGame.TP.Models
     internal class Menu
     {
         private const float SCALE = 0.1f;
+        private const float YAW = MathHelper.PiOver2;
+        private const float PITCH = 0;
+        private const float ROLL = MathHelper.PiOver4;
 
-        Model _model;
-        List<RectangleButton> _buttons;
-        MouseState _previousMouse;
-        MouseState _currentMouse;
-        SpriteBatch spriteBatch;
+        private readonly Model _model;
+        private readonly Matrix _rotationScaleMatrix;
+        private readonly List<RectangleButton> _buttons;
+        private readonly SpriteBatch _spriteBatch;
+        private MouseState _previousMouse;
+        private MouseState _currentMouse;
         public Menu(List<RectangleButton> buttons, SpriteBatch spriteBatch)
         {
             _model = Nave_1.GetModel();
 
             // Inicializa la lista de botones
             _buttons = buttons;
-            this.spriteBatch = spriteBatch;
+            _spriteBatch = spriteBatch;
+
+            _rotationScaleMatrix = Matrix.CreateScale(SCALE) * Matrix.CreateFromYawPitchRoll(YAW, PITCH, ROLL);
         }
 
-        public void Update(GameTime gameTime)
+        public void Update()
         {
             _previousMouse = _currentMouse;
             _currentMouse = Mouse.GetState();
@@ -37,22 +41,22 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void Draw(Matrix viewProjection, Vector3 LightPosition, Vector3 CameraPosition)
+        public void Draw(Matrix viewProjection, Vector3 lightPosition, Vector3 cameraPosition)
         {
             foreach (var mesh in _model.Meshes)
             {
                 var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * scaleMatrix * Matrix.CreateFromYawPitchRoll(MathHelper.PiOver2,0,MathHelper.PiOver4);
+                var world = meshWorld * _rotationScaleMatrix;
+                var transposeInvertWorld = Matrix.Transpose(Matrix.Invert(world));
 
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
                     effect.Parameters["ViewProjection"].SetValue(viewProjection);
                     effect.Parameters["World"].SetValue(world);
-                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
-                    effect.Parameters["lightPosition"].SetValue(LightPosition);
-                    effect.Parameters["eyePosition"]?.SetValue(CameraPosition);
+                    effect.Parameters["InverseTransposeWorld"].SetValue(transposeInvertWorld);
+                    effect.Parameters["lightPosition"].SetValue(lightPosition);
+                    effect.Parameters["eyePosition"]?.SetValue(cameraPosition);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
@@ -62,13 +66,13 @@ namespace TGC.MonoGame.TP.Models
                 mesh.Draw();
             }
 
-            spriteBatch.Begin(blendState: BlendState.AlphaBlend); // ¡Importante activar AlphaBlend!
+            _spriteBatch.Begin(blendState: BlendState.AlphaBlend);
             foreach (var button in _buttons)
             {
-                button.Draw(spriteBatch);
+                button.Draw();
             }
 
-            spriteBatch.End();
+            _spriteBatch.End();
         }
     }
 }

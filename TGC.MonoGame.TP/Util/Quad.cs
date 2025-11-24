@@ -28,7 +28,9 @@ namespace TGC.MonoGame.TP.Util
 
         public static void Draw(Effect effect, GraphicsDevice graphicsDevice)
         {
-             foreach (var pass in effect.CurrentTechnique.Passes)
+            graphicsDevice.DepthStencilState = DepthStencilState.None;
+
+            foreach (var pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawUserIndexedPrimitives(
@@ -40,6 +42,8 @@ namespace TGC.MonoGame.TP.Util
                     0, 2
                 );
             }
+
+            graphicsDevice.DepthStencilState = DepthStencilState.Default;
         }
     }
 }
