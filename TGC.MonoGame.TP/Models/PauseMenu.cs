@@ -35,8 +35,7 @@ namespace TGC.MonoGame.TP.Models
 
         public void Draw(GraphicsDevice graphicsDevice)
         {
-            _effect.Parameters["View"].SetValue(Matrix.Identity);
-            _effect.Parameters["Projection"].SetValue(Matrix.Identity);
+            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
             _effect.Parameters["World"].SetValue(Matrix.Identity);
             _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
 
@@ -44,18 +43,7 @@ namespace TGC.MonoGame.TP.Models
             graphicsDevice.BlendState = BlendState.AlphaBlend;
 
             // 4. Dibujar el Quad
-            foreach (var pass in _effect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserIndexedPrimitives(
-                    PrimitiveType.TriangleList,
-                    Quad.GetVertices(),
-                    0,
-                    4,
-                    Quad.GetIndices(),
-                    0, 2
-                );
-            }
+            Quad.Draw(_effect, graphicsDevice);
 
             // 5. Restaurar matrices y Z-Buffer para la escena 3D
             graphicsDevice.DepthStencilState = DepthStencilState.Default;

@@ -13,11 +13,6 @@
 // Reference for HLSL - https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-reference
 // HLSL Semantics - https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-semantics
 
-float4x4 World;
-float4x4 View;
-float4x4 Projection;
-
-
 // Texturas
 uniform Texture2D Texture;
 

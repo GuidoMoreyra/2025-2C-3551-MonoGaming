@@ -8,8 +8,7 @@
 #endif
 
 float4x4 World;
-float4x4 View;
-float4x4 Projection;
+float4x4 ViewProjection;
 
 // Textura
 uniform Texture2D Texture;
@@ -48,8 +47,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     VertexShaderOutput output = (VertexShaderOutput)0;
 
     float4 worldPosition = mul(input.Position, World);
-    float4 viewPosition = mul(worldPosition, View);
-    output.Position = mul(viewPosition, Projection);
+    output.Position = mul(worldPosition, ViewProjection);
 
     // Desplaza la textura según el tiempo y la velocidad
     float2 offset = Time * Speed;

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -6,10 +7,8 @@ namespace TGC.MonoGame.TP.Models.BaseModels
     internal class Caja_1
     {
         private static Model _model = null;
-        public static Model GetModel(ContentManager content)
+        public static void InitializeModel(ContentManager content)
         {
-            if (_model == null)
-            {
                 _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Caja_1/Caja_1");
                 var texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Caja_1/Caja1_AlbedoTransparency");
                 var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShaderTexture");
@@ -23,9 +22,14 @@ namespace TGC.MonoGame.TP.Models.BaseModels
                         meshPart.Effect.Parameters["Texture"].SetValue(texture);
                     }
                 }
+        }
 
+        public static Model GetModel()
+        {
+            if(_model == null)
+            {
+                throw new InvalidOperationException("No se inicializo el modelo");
             }
-
             return _model;
         }
     }

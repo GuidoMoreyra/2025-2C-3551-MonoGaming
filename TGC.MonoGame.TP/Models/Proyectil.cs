@@ -93,10 +93,9 @@ namespace TGC.MonoGame.TP.Models
         }
 
 
-        public void Draw(Matrix view, Matrix projection)
+        public void Draw(Matrix viewProjection)
         {
-            _effect.Parameters["View"].SetValue(view);
-            _effect.Parameters["Projection"].SetValue(projection);
+            _effect.Parameters["ViewProjection"].SetValue(viewProjection);
             _effect.Parameters["World"].SetValue(_worldMatrix);
 
             foreach (var pass in _effect.CurrentTechnique.Passes)
@@ -114,26 +113,6 @@ namespace TGC.MonoGame.TP.Models
                 ProyectilModel.GetIndices().Length / 3          // Número de primitivas (índices.Length / 3 = N° de triángulos)
             );
 
-            // foreach (var mesh in _model.Meshes)
-            // {
-            //     var meshWorld = mesh.ParentBone.Transform;
-            //     var scaleMatrix = Matrix.CreateScale(SCALE);
-            //     var world = meshWorld * scaleMatrix * _worldMatrix;
-
-            //     foreach (var meshPart in mesh.MeshParts)
-            //     {
-            //         var effect = meshPart.Effect;
-            //         effect.Parameters["View"].SetValue(view);
-            //         effect.Parameters["Projection"].SetValue(projection);
-            //         effect.Parameters["World"].SetValue(world);
-
-            //         foreach (var pass in effect.CurrentTechnique.Passes)
-            //         {
-            //             pass.Apply();
-            //         }
-            //     }
-            //     mesh.Draw();
-            // }
         }
 
         public void SetWorldMatrix(Matrix newWorld)

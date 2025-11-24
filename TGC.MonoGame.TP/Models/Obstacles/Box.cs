@@ -1,51 +1,44 @@
-using System;
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Modules;
 using TGC.MonoGame.TP.Util;
 
 namespace TGC.MonoGame.TP.Models.Obstacles
 {
     internal class Box
     {
-        private Matrix _worldMatrix;
-        private Model _model;
-        private Matrix _rotation;
         private const float SCALE = 0.05f;
 
-        public bool estaDestruido = false;
-
-        // ✅ BoundingBox
-        // private BoundingBox _boundingBoxLocal;
-        // private BoundingBox _boundingBoxWorld;
-        // public BoundingBox BoundingBox => _boundingBoxWorld;
-
+        private readonly Model _model;
+        private Matrix _scaleMatrix;
+        private Matrix _worldMatrix;
+        private bool _estaDestruido;
         private BoundingSphere _boundingSphereLocal;
         private BoundingSphere _boundingSphereWorld;
         public BoundingSphere BoundingSphere => _boundingSphereWorld;
 
-
-        public Box(ContentManager content, Matrix worldMatrix, float angle)
+        public Box()
         {
-            _model = Caja_1.GetModel(content);
+            _model = Caja_1.GetModel();
+            _estaDestruido = false;
 
-            _worldMatrix = worldMatrix;
-            _rotation = Matrix.CreateRotationX(MathHelper.ToRadians(angle));
+            _scaleMatrix = Matrix.CreateScale(SCALE);
 
             _boundingSphereLocal = CalculateBoundingSphere(_model);
-            UpdateBoundingSphereWorld();
-
-            // ✅ Calcular bounding box local
-            // _boundingBoxLocal = CalculateBoundingBox(_model);
-            // UpdateBoundingBoxWorld();
         }
+
+        public void SetWorldMatrix(Matrix worldMatrix)
+        {
+            _estaDestruido = false;
+            _worldMatrix = _scaleMatrix * Matrix.CreateRotationX(MathHelper.ToRadians(Utils.GenerateNumber(90))) * worldMatrix;
+
+            UpdateBoundingSphereWorld();
+        }
+
 
         private BoundingSphere CalculateBoundingSphere(Model model)
         {
-            BoundingSphere mergedSphere = new BoundingSphere();
+            BoundingSphere mergedSphere = new();
             bool first = true;
 
             foreach (var mesh in model.Meshes)
@@ -67,157 +60,86 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             return mergedSphere;
         }
 
-        // private BoundingBox CalculateBoundingBox(Model model)
-        // {
-        //     Vector3 min = new Vector3(float.MaxValue);
-        //     Vector3 max = new Vector3(float.MinValue);
-
-        //     foreach (var mesh in model.Meshes)
-        //     {
-        //         var meshTransform = mesh.ParentBone.Transform;
-        //         foreach (var meshPart in mesh.MeshParts)
-        //         {
-        //             var vertexData = new VertexPositionNormalTexture[meshPart.NumVertices];
-        //             meshPart.VertexBuffer.GetData(vertexData);
-
-        //             foreach (var vertex in vertexData)
-        //             {
-        //                 var transformed = Vector3.Transform(vertex.Position, meshTransform);
-        //                 min = Vector3.Min(min, transformed);
-        //                 max = Vector3.Max(max, transformed);
-        //             }
-        //         }
-        //     }
-
-        //     return new BoundingBox(min, max);
-        // }
-
-
-        // private void UpdateBoundingBoxWorld(float reductionFactor = 0.6f)
-        // {
-        //     var scaleMatrix = Matrix.CreateScale(SCALE);
-        //     var worldTransform = scaleMatrix * _worldMatrix;
-
-        //     var corners = _boundingBoxLocal.GetCorners();
-        //     var transformedCorners = new Vector3[corners.Length];
-        //     for (int i = 0; i < corners.Length; i++)
-        //         transformedCorners[i] = Vector3.Transform(corners[i], worldTransform);
-
-        //     Vector3 center = Vector3.Zero;
-        //     foreach (var v in transformedCorners)
-        //         center += v;
-        //     center /= transformedCorners.Length;
-
-        //     for (int i = 0; i < transformedCorners.Length; i++)
-        //         transformedCorners[i] = center + (transformedCorners[i] - center) * reductionFactor;
-
-        //     _boundingBoxWorld = BoundingBox.CreateFromPoints(transformedCorners);
-        // }
-
         private void UpdateBoundingSphereWorld()
         {
-            var scaleMatrix = Matrix.CreateScale(SCALE);
-            Matrix worldTransform = scaleMatrix * _rotation * _worldMatrix;
-
-            _boundingSphereWorld = _boundingSphereLocal.Transform(worldTransform);
+            _boundingSphereWorld = _boundingSphereLocal.Transform(_worldMatrix);
         }
 
 
-        public void Draw(Matrix view, Matrix projection)
+        public void Draw(Matrix viewProjection)
         {
-            foreach (var mesh in _model.Meshes)
+            if (!_estaDestruido)
             {
-                var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * _rotation * scaleMatrix * _worldMatrix;
-
-                foreach (var meshPart in mesh.MeshParts)
+                foreach (var mesh in _model.Meshes)
                 {
-                    var effect = meshPart.Effect;
-                    effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
-                    effect.Parameters["World"].SetValue(world);
+                    var meshWorld = mesh.ParentBone.Transform;
+                    var world = meshWorld * _worldMatrix;
 
-                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    foreach (var meshPart in mesh.MeshParts)
                     {
-                        pass.Apply();
+                        var effect = meshPart.Effect;
+                        effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
+                        effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                        effect.Parameters["World"].SetValue(world);
+
+                        foreach (var pass in effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                        }
+                    }
+                    mesh.Draw();
+                }
+            }
+        }
+
+        public void DrawBloom(Matrix viewProjection)
+        {
+            if (!_estaDestruido)
+            {
+                foreach (var mesh in _model.Meshes)
+                {
+                    var meshWorld = mesh.ParentBone.Transform;
+                    var world = meshWorld * _worldMatrix;
+                    foreach (var meshPart in mesh.MeshParts)
+                    {
+                        var effect = meshPart.Effect;
+                        effect.CurrentTechnique = effect.Techniques["Bloom"];
+                        effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                        effect.Parameters["World"].SetValue(world);
+
+                        foreach (var pass in effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                        }
+                    }
+                    mesh.Draw();
+                }
+            }
+        }
+
+        //TODO Revisar colisiones
+        public void Update(PlayerShip player)
+        {
+            if (!_estaDestruido)
+            {
+                if (BoundingSphere.Intersects(player.BoundingBox) && !player.tieneEscudo)
+                {
+                    player.Destroy();
+                }
+                foreach (var proyectil in player.proyectiles)
+                {
+                    if (BoundingSphere.Intersects(proyectil.BoundingBox))
+                    {
+                        Destroy();
+                        proyectil.Destroy(true);
                     }
                 }
-                mesh.Draw();
             }
-            // Dibujar el wireframe de la esfera
-            // Color debugColor = Color.Red; // Por ejemplo, rojo
-            // BoundingSphereRenderer.Draw(_boundingSphereWorld, view, projection, debugColor);
-        }
-
-        public void DrawBloom(Matrix view, Matrix projection)
-        {
-            foreach (var mesh in _model.Meshes)
-            {
-                var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * _rotation * scaleMatrix * _worldMatrix;
-
-                foreach (var meshPart in mesh.MeshParts)
-                {
-                    var effect = meshPart.Effect;
-                    effect.CurrentTechnique = effect.Techniques["Bloom"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
-                    effect.Parameters["World"].SetValue(world);
-
-                    foreach (var pass in effect.CurrentTechnique.Passes)
-                    {
-                        pass.Apply();
-                    }
-                }
-                mesh.Draw();
-            }
-        }
-
-        // ✅ Si la caja se mueve, llamá esto con el nuevo worldMatrix
-        public void SetWorldMatrix(Matrix newWorld)
-        {
-            _worldMatrix = newWorld;
-            UpdateBoundingSphereWorld();
-            // UpdateBoundingBoxWorld();
-        }
-
-        public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
-        {
-            if (BoundingSphere.Intersects(player.BoundingBox) && !player.tieneEscudo)
-            {
-                player.Destroy();
-                Console.WriteLine("Caja");
-            }
-            foreach (var proyectil in player.proyectiles)
-            {
-                if (BoundingSphere.Intersects(proyectil.BoundingBox))
-                {
-                    Destroy();
-                    proyectil.Destroy(true);
-                }
-            }
-            // if (this.BoundingBox.Intersects(player.BoundingBox))
-            // {
-            //     player.Restart();
-            //     Console.WriteLine("Caja");
-            //     generator.GenerarEscenario(ref escenario);
-            // }
-            // foreach (var proyectil in player.proyectiles)
-            // {
-            //     if (this.BoundingBox.Intersects(proyectil.BoundingBox))
-            //     {
-            //         this.Destroy();
-            //         proyectil.Destroy();
-            //     }
-            // }
         }
 
         public void Destroy()
         {
-            estaDestruido = true;
+            _estaDestruido = true;
         }
     }
 }

@@ -1,35 +1,42 @@
-using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Modules;
+using TGC.MonoGame.TP.Models.Modules.Contract;
 using TGC.MonoGame.TP.Util;
 
 namespace TGC.MonoGame.TP.Models.Obstacles
 {
     internal class Ship
     {
-        private Matrix _worldMatrix;
-        private Model _model;
         private const float SCALE = 0.02f;
-        public bool estaDestruido = false;
+        private const float MODEL_ROTATION = 90f;
+
+        private readonly Model _model;
+        private readonly Matrix _rotationScaleMatrix;
+        private bool _estaDestruido = false;
+        private Matrix _worldMatrix;
         private BoundingBox _boundingBox;
         private BoundingBox _worldBoundingBox;
         public BoundingBox BoundingBox => _worldBoundingBox;
 
-
-        public Ship(ContentManager content, Matrix worldMatrix)
+        public Ship()
         {
-            //Instancio model
-            _model = Nave_1.GetModel(content);
+            _estaDestruido = false;
 
-            //Matriz de mundo
-            var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(90));
-            _worldMatrix = rotation * worldMatrix;
+            _model = Nave_1.GetModel();
+
+            _rotationScaleMatrix = Matrix.CreateScale(SCALE) * Matrix.CreateRotationY(MathHelper.ToRadians(MODEL_ROTATION));
 
             _boundingBox = CalculateBoundingBox(_model);
+        }
+
+        public void SetWorldMatrix(Matrix worldMatrix)
+        {
+            _estaDestruido = false;
+
+            _worldMatrix = _rotationScaleMatrix * worldMatrix;
+
             UpdateBoundingBoxWorld();
         }
 
@@ -60,15 +67,11 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 
         private void UpdateBoundingBoxWorld(float reductionFactor = 0.6f)
         {
-            // Aplica escala y mundo
-            var scaleMatrix = Matrix.CreateScale(SCALE);
-            var worldTransform = scaleMatrix * _worldMatrix;
-
             // Obtiene los 8 vértices del bounding box original
             var corners = _boundingBox.GetCorners();
             var transformedCorners = new Vector3[corners.Length];
             for (int i = 0; i < corners.Length; i++)
-                transformedCorners[i] = Vector3.Transform(corners[i], worldTransform);
+                transformedCorners[i] = Vector3.Transform(corners[i], _worldMatrix);
 
             // Calcula el centro real del bounding box transformado
             Vector3 center = Vector3.Zero;
@@ -84,84 +87,83 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             _worldBoundingBox = BoundingBox.CreateFromPoints(transformedCorners);
         }
 
-        public void Draw(Matrix view, Matrix projection)
+        public void Draw(Matrix viewProjection)
         {
-            foreach (var mesh in _model.Meshes)
+            if (!_estaDestruido)
             {
-                var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * scaleMatrix * _worldMatrix;
-
-                foreach (var meshPart in mesh.MeshParts)
+                foreach (var mesh in _model.Meshes)
                 {
-                    var effect = meshPart.Effect;
-                    effect.CurrentTechnique = effect.Techniques["MainTechnique"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
-                    effect.Parameters["World"].SetValue(world);
+                    var meshWorld = mesh.ParentBone.Transform;
+                    var world = meshWorld * _worldMatrix;
+                    var inverseTrasposeWorld = Matrix.Transpose(Matrix.Invert(world));
 
-                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    foreach (var meshPart in mesh.MeshParts)
                     {
-                        pass.Apply();
+                        var effect = meshPart.Effect;
+                        effect.CurrentTechnique = effect.Techniques["MainTechnique"];
+                        effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                        effect.Parameters["World"].SetValue(world);
+                        effect.Parameters["InverseTransposeWorld"].SetValue(inverseTrasposeWorld);
+
+                        foreach (var pass in effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                        }
                     }
+                    mesh.Draw();
                 }
-                mesh.Draw();
             }
         }
 
-        public void DrawBloom(Matrix view, Matrix projection)
+        public void DrawBloom(Matrix viewProjection)
         {
-            foreach (var mesh in _model.Meshes)
+            if (!_estaDestruido)
             {
-                var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * scaleMatrix * _worldMatrix;
-                foreach (var meshPart in mesh.MeshParts)
+                foreach (var mesh in _model.Meshes)
                 {
-                    var effect = meshPart.Effect;
-                    effect.CurrentTechnique = effect.Techniques["Bloom"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
-                    effect.Parameters["World"].SetValue(world);
-                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
-
-                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    var meshWorld = mesh.ParentBone.Transform;
+                    var world = meshWorld * _worldMatrix;
+                    var inverseTrasposeWorld = Matrix.Transpose(Matrix.Invert(world));
+                    foreach (var meshPart in mesh.MeshParts)
                     {
-                        pass.Apply();
+                        var effect = meshPart.Effect;
+                        effect.CurrentTechnique = effect.Techniques["Bloom"];
+                        effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                        effect.Parameters["World"].SetValue(world);
+                        effect.Parameters["InverseTransposeWorld"].SetValue(inverseTrasposeWorld);
+
+                        foreach (var pass in effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                        }
                     }
+                    mesh.Draw();
                 }
-                mesh.Draw();
             }
         }
 
-        public void SetWorldMatrix(Matrix newWorld)
+        public void Update(PlayerShip player)
         {
-            _worldMatrix = newWorld;
-            UpdateBoundingBoxWorld();
-        }
-
-        public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
-        {
-            if (this.BoundingBox.Intersects(player.BoundingBox) && !player.tieneEscudo)
+            if (!_estaDestruido)
             {
-                player.Destroy();
-                Console.WriteLine("Caja");
-            }
-            foreach (var proyectil in player.proyectiles)
-            {
-                if (this.BoundingBox.Intersects(proyectil.BoundingBox))
+                if (BoundingBox.Intersects(player.BoundingBox) && !player.tieneEscudo)
                 {
-                    this.Destroy();
-                    proyectil.Destroy(true);
+                    player.Destroy();
+                }
+                foreach (var proyectil in player.proyectiles)
+                {
+                    if (BoundingBox.Intersects(proyectil.BoundingBox))
+                    {
+                        Destroy();
+                        proyectil.Destroy(true);
+                    }
                 }
             }
         }
 
         public void Destroy()
         {
-            estaDestruido = true;
+            _estaDestruido = true;
         }
     }
-
-
 }

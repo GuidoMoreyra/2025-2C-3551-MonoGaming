@@ -18,9 +18,9 @@ namespace TGC.MonoGame.TP.Models
         MouseState _previousMouse;
         MouseState _currentMouse;
         SpriteBatch spriteBatch;
-        public Menu(ContentManager content, List<RectangleButton> buttons, SpriteBatch spriteBatch)
+        public Menu(List<RectangleButton> buttons, SpriteBatch spriteBatch)
         {
-            _model = Nave_1.GetModel(content);
+            _model = Nave_1.GetModel();
 
             // Inicializa la lista de botones
             _buttons = buttons;
@@ -37,7 +37,7 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void Draw(Matrix view, Matrix projection, Vector3 LightPosition, Vector3 CameraPosition)
+        public void Draw(Matrix viewProjection, Vector3 LightPosition, Vector3 CameraPosition)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -48,8 +48,7 @@ namespace TGC.MonoGame.TP.Models
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
                     effect.Parameters["World"].SetValue(world);
                     effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
                     effect.Parameters["lightPosition"].SetValue(LightPosition);

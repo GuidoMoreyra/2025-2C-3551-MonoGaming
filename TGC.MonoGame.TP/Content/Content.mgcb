@@ -43,6 +43,12 @@
 /processorParam:DebugMode=Auto
 /build:Effects/GaussianBlur.fx
 
+#begin Effects/MovingTexture.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Effects/MovingTexture.fx
+
 #begin Effects/PostProcesadoBloom.fx
 /importer:EffectImporter
 /processor:EffectProcessor

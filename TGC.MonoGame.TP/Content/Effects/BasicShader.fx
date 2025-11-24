@@ -8,14 +8,10 @@
 #endif
 
 float4x4 World;
-float4x4 View;
-float4x4 Projection;
+float4x4 ViewProjection;
 
 // Color base del objeto
 float4 DiffuseColor;
-
-// Nueva variable para transparencia (0 = invisible, 1 = opaco)
-float Alpha = 1.0;
 
 struct VertexShaderInput
 {
@@ -32,17 +28,14 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     VertexShaderOutput output = (VertexShaderOutput)0;
 
     float4 worldPosition = mul(input.Position, World);
-    float4 viewPosition = mul(worldPosition, View);
-    output.Position = mul(viewPosition, Projection);
+    output.Position = mul(worldPosition, ViewProjection);
 
     return output;
 }
 
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-    float4 color = DiffuseColor;
-    color.a *= Alpha;
-    return color;
+    return DiffuseColor;
 }
 
 technique BasicColorDrawing

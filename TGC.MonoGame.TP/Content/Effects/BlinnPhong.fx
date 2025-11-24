@@ -14,8 +14,7 @@
 // HLSL Semantics - https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-semantics
 
 float4x4 World;
-float4x4 View;
-float4x4 Projection;
+float4x4 ViewProjection;
 
 float4x4 InverseTransposeWorld;
 
@@ -95,10 +94,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	VertexShaderOutput output = (VertexShaderOutput)0;
     // Model space to World space
     output.WorldPosition = mul(input.Position, World);
-    // World space to View space
-    float4 viewPosition = mul(output.WorldPosition, View);	
-	// View space to Projection space
-    output.Position = mul(viewPosition, Projection);
+	// world space to Projection space
+    output.Position = mul(output.WorldPosition, ViewProjection);
 
     output.TexCoord = input.TexCoord;
 

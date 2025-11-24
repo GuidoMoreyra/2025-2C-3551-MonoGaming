@@ -1,78 +1,67 @@
-using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.Modules.Contract;
 using TGC.MonoGame.TP.Util;
 
 namespace TGC.MonoGame.TP.Models.Modules;
 
 internal class PipeModule : IModule
 {
+    private const float MODEL_ROTATION = -90f;
+    private const float SCALE = 0.2f;
+
+    private readonly Matrix _rotationScaleMatrix;
+    private readonly Model _model;
     private Matrix _worldMatrix;
-    private Model _model;
-    private List<Ship> obstacles = new List<Ship>();
 
     //Medidas del Modulo
-    private float scale = 0.2f;
 
-    public PipeModule(ContentManager content, Matrix worldMatrix)
+    public PipeModule()
     {
-        //Instancio modelo
-        _model = Pipe.GetModel(content);
+        _model = Pipe.GetModel();
 
-        //Matriz de mundo
-        _worldMatrix = worldMatrix;
-
+        _rotationScaleMatrix = Matrix.CreateRotationY(MathHelper.ToRadians(MODEL_ROTATION)) * Matrix.CreateScale(SCALE);
     }
 
-public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition, float elapsedTime)
-{
-    foreach (var mesh in _model.Meshes)
+    public void SetWorldMatrix(Matrix worldMatrix)
     {
+        _worldMatrix = _rotationScaleMatrix * worldMatrix;
+    }
 
-        var meshWorld = mesh.ParentBone.Transform;
-
-
-        var scaleMatrix = Matrix.CreateScale(scale);
-        var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(-90f));
-
-
-        var world = meshWorld * rotation * scaleMatrix * _worldMatrix;
-
-        foreach (var meshPart in mesh.MeshParts)
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime)
+    {
+        foreach (var mesh in _model.Meshes)
         {
-            var effect = meshPart.Effect;
 
-            effect.Parameters["World"].SetValue(world);
-            effect.Parameters["View"].SetValue(view);
-            effect.Parameters["Projection"].SetValue(projection);
+            var meshWorld = mesh.ParentBone.Transform;
+            var world = meshWorld * _worldMatrix;
 
+            foreach (var meshPart in mesh.MeshParts)
+            {
+                var effect = meshPart.Effect;
 
-            effect.Parameters["Time"].SetValue(elapsedTime*1);
-            effect.Parameters["Speed"].SetValue(new Vector2(0.1f, 0.1f));
+                effect.Parameters["World"].SetValue(world);
+                effect.Parameters["ViewProjection"].SetValue(viewProjection);
+
+                effect.Parameters["Time"]?.SetValue(elapsedTime * 1);
+                effect.Parameters["Speed"]?.SetValue(new Vector2(0.1f, 0.1f));
+            }
+            mesh.Draw();
         }
-
-
-        mesh.Draw();
-    }
-}
-
-
-
-
-    public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
-    {
-        foreach (var obstacle in obstacles)
-            obstacle.Update(gameTime, player, generator, ref escenario);
-
-        obstacles.RemoveAll(o => o.estaDestruido);
     }
 
-    public string Modulo()
+    public void DrawBloom(Matrix viewProjection)
     {
-        return "Corridor";
+    }
+
+    public void Update(GameTime gameTime, PlayerShip player)
+    {
+    }
+
+    public static int GetModuleNumber()
+    {
+        return 3;
     }
 }

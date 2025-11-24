@@ -1,3 +1,5 @@
+using System;
+using System.Runtime.ConstrainedExecution;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -17,25 +19,13 @@ namespace TGC.MonoGame.TP.Models
 
         public void Draw(GraphicsDevice graphicsDevice)
         {
-            _effect.Parameters["View"].SetValue(Matrix.Identity);
-            _effect.Parameters["Projection"].SetValue(Matrix.Identity);
+            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
             _effect.Parameters["World"].SetValue(Matrix.Identity);
             _effect.Parameters["Texture"].SetValue(_texture);
 
             graphicsDevice.DepthStencilState = DepthStencilState.None;
 
-            foreach (var pass in _effect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserIndexedPrimitives(
-                    PrimitiveType.TriangleList,
-                    Quad.GetVertices(),
-                    0,
-                    4,
-                    Quad.GetIndices(),
-                    0, 2
-                );
-            }
+            Quad.Draw(_effect, graphicsDevice);
 
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
         }

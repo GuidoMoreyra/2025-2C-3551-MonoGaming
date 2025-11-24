@@ -46,8 +46,7 @@ namespace TGC.MonoGame.TP.Models
 
         public void Draw(GraphicsDevice graphicsDevice)
         {
-            _effect.Parameters["View"].SetValue(Matrix.Identity);
-            _effect.Parameters["Projection"].SetValue(Matrix.Identity);
+            _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
             _effect.Parameters["World"].SetValue(Matrix.Identity);
             _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
 

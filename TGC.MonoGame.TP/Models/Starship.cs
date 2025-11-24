@@ -56,12 +56,12 @@ namespace TGC.MonoGame.TP.Models
         public PlayerShip(ContentManager content)
         {
 
-            escudo = new Escudo(content,_worldMatrix);
+            escudo = new Escudo(content, _worldMatrix);
             Position = Vector3.Zero;
             sonidoColision = content.Load<SoundEffect>(MonoGaming.ContentFolderSounds + "ExplosionJugador");
 
             //Recupero el modelo con las texturas
-            _model = Nave_1.GetModel(content);
+            _model = Nave_1.GetModel();
 
             //Creo la matriz de mundo inicial
             var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(-90));
@@ -115,7 +115,7 @@ namespace TGC.MonoGame.TP.Models
             _worldBoundingBox = BoundingBox.CreateFromPoints(transformedCorners);
         }
 
-        public void Draw(Matrix view, Matrix projection, Vector3 CameraPosition, Vector3 LightPosition,GraphicsDevice graphicsDevice)
+        public void Draw(Matrix viewProjection, Vector3 CameraPosition, Vector3 LightPosition, GraphicsDevice graphicsDevice)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -128,8 +128,7 @@ namespace TGC.MonoGame.TP.Models
                 {
                     var effect = meshPart.Effect;
                     effect.CurrentTechnique = effect.Techniques["MainTechnique"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
                     effect.Parameters["World"].SetValue(world);
                     effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
                     effect.Parameters["lightPosition"].SetValue(LightPosition);
@@ -142,16 +141,16 @@ namespace TGC.MonoGame.TP.Models
                 }
                 mesh.Draw();
             }
-            
+
             foreach (var proyectil in proyectiles)
             {
-                proyectil.Draw(view, projection);
+                proyectil.Draw(viewProjection);
             }
-            if(tieneEscudo == true)
-                escudo.Draw(view,projection,_worldMatrix,graphicsDevice);
+            if (tieneEscudo == true)
+                escudo.Draw(viewProjection, _worldMatrix, graphicsDevice);
         }
 
-        public void DrawBloom(Matrix view, Matrix projection)
+        public void DrawBloom(Matrix viewProjection)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -164,8 +163,7 @@ namespace TGC.MonoGame.TP.Models
                 {
                     var effect = meshPart.Effect;
                     effect.CurrentTechnique = effect.Techniques["Bloom"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
                     effect.Parameters["World"].SetValue(world);
                     effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
 
@@ -222,13 +220,13 @@ namespace TGC.MonoGame.TP.Models
                 }
 
             }
-            if (keyboardState.IsKeyDown(Keys.E) && tieneEscudo == false )
-                {
-                    this.tieneEscudo = true;
-                    tiempoAcumuladoEscudo = 0f;
-    
-                }
-            if (tiempoAcumuladoEscudo >=  DURACION_ESCUDO)
+            if (keyboardState.IsKeyDown(Keys.E) && tieneEscudo == false)
+            {
+                this.tieneEscudo = true;
+                tiempoAcumuladoEscudo = 0f;
+
+            }
+            if (tiempoAcumuladoEscudo >= DURACION_ESCUDO)
             {
                 this.tieneEscudo = false;
             }

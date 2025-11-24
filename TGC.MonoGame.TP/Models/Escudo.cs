@@ -16,21 +16,21 @@ namespace TGC.MonoGame.TP.Models.Modules
         public Escudo(ContentManager content, Matrix worldMatrix)
         {
             _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Esfera/Esfera");
-            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader");
+            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
 
             // Clonar el shader para cada meshPart
             foreach (var mesh in _model.Meshes)
             {
                 foreach (var meshPart in mesh.MeshParts)
                 {
-                    meshPart.Effect = effect.Clone();
+                    meshPart.Effect = effect;
                 }
             }
 
             _worldMatrix = worldMatrix;
         }
 
-       public void Draw(Matrix view, Matrix projection, Matrix mundo, GraphicsDevice graphicsDevice)
+       public void Draw(Matrix viewProjection, Matrix mundo, GraphicsDevice graphicsDevice)
         {
         graphicsDevice.BlendState = BlendState.NonPremultiplied;
         graphicsDevice.DepthStencilState = new DepthStencilState()
@@ -45,10 +45,8 @@ namespace TGC.MonoGame.TP.Models.Modules
                 {
                     var effect = meshPart.Effect;
                     effect.Parameters["World"].SetValue(Matrix.CreateScale(scale) * mundo);
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
-                    effect.Parameters["DiffuseColor"]?.SetValue(Color.White.ToVector4());
-                    effect.Parameters["Alpha"].SetValue(Alpha);
+                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                    effect.Parameters["DiffuseColor"]?.SetValue(new Vector4(Color.White.ToVector3(), Alpha));
                 }
                 mesh.Draw();
             }

@@ -1,10 +1,8 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
+using TGC.MonoGame.TP.Models.Modules.Contract;
 using TGC.MonoGame.TP.Models.Obstacles;
 using TGC.MonoGame.TP.Util;
 
@@ -13,57 +11,57 @@ namespace TGC.MonoGame.TP.Models.Modules;
 
 internal class BoxModule : IModule
 {
-    private Matrix _worldMatrix;
-    private Model _model;
-    private List<Box> obstacles = new List<Box>();
+    private const int CANTIDAD_OBSTACULOS = 6;
+    private const float SCALE = 0.1f;
     //Medidas del Modulo
-    private float scale = 0.1f;
-    private readonly int Up = 8;
-    private readonly int Right = 25;
-    private readonly int Foward = 18;
+    private const int UP = 8;
+    private const int RIGHT = 25;
+    private const int FORWARD = 18;
 
-    public BoxModule(ContentManager content, Matrix worldMatrix)
+    private readonly Model _model;
+    private readonly List<Box> _obstacles = [];
+    private readonly Matrix _scaleMatrix;
+    private Matrix _worldMatrix;
+
+    public BoxModule()
     {
-        _model = Pasillo.GetModel(content);
+        _model = Pasillo.GetModel();
 
-        _worldMatrix = worldMatrix;
+        _scaleMatrix = Matrix.CreateScale(SCALE);
 
-        GenerateObstacles(content, worldMatrix);
-    }
-
-    public void GenerateDecoration()
-    {
-        //Deberia generar las decoraciones del modulo.
-    }
-
-
-    //Deberia generar  una pocision aleatoria con respecto del centro del modulo.
-    //De momento se deja con una posicion fija.
-    public void GenerateObstacles(ContentManager content, Matrix worldMatrix)
-    {
-        int cantidadMaximaDeObstaculos = 6;
-        for (int index = 0; index < cantidadMaximaDeObstaculos; index++)
+        for (int i = 0; i < CANTIDAD_OBSTACULOS; i++)
         {
-            Matrix traslacionDeCaja = Matrix.CreateTranslation(Vector3.Forward * GenerateNumber(Foward) + Vector3.Up * GenerateNumber(Up) + Vector3.Right * GenerateNumber(Right));
-            obstacles.Add(new Box(content, worldMatrix * traslacionDeCaja, GenerateNumber(90)));
+            _obstacles.Add(new Box());
         }
     }
 
-    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition,float elapsedTime)
+    public void SetWorldMatrix(Matrix worldMatrix)
     {
+        _worldMatrix = _scaleMatrix * worldMatrix;
 
+        GenerateObstacles(worldMatrix);
+    }
+
+    private void GenerateObstacles(Matrix worldMatrix)
+    {
+        foreach (Box box in _obstacles)
+        {
+            Matrix traslacionDeCaja = Matrix.CreateTranslation(Vector3.Forward * Utils.GenerateNumber(FORWARD) + Vector3.Up * Utils.GenerateNumber(UP) + Vector3.Right * Utils.GenerateNumber(RIGHT));
+            box.SetWorldMatrix(worldMatrix * traslacionDeCaja);
+        }
+    }
+
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime)
+    {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
-
         foreach (var mesh in _model.Meshes)
         {
             var meshWorld = mesh.ParentBone.Transform;
-            var scaleMatrix = Matrix.CreateScale(scale);
-            var world = meshWorld * scaleMatrix * _worldMatrix;
+            var world = meshWorld * _worldMatrix;
             foreach (var meshPart in mesh.MeshParts)
             {
                 var effect = meshPart.Effect;
-                effect.Parameters["View"].SetValue(view);
-                effect.Parameters["Projection"].SetValue(projection);
+                effect.Parameters["ViewProjection"].SetValue(viewProjection);
                 effect.Parameters["World"].SetValue(world);
 
                 foreach (var pass in effect.CurrentTechnique.Passes)
@@ -71,43 +69,32 @@ internal class BoxModule : IModule
                     pass.Apply();
                 }
             }
-            // Draw the mesh.
             mesh.Draw();
         }
 
-        foreach (Box box in obstacles)
+        foreach (Box box in _obstacles)
         {
-            box.Draw(view, projection);
+            box.Draw(viewProjection);
         }
     }
 
-
-
-    public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
+    public void Update(GameTime gameTime, PlayerShip player)
     {
-        foreach (var obstacle in obstacles)
-            obstacle.Update(gameTime, player, generator, ref escenario);
+        foreach (var obstacle in _obstacles)
+            obstacle.Update(player);
 
-        obstacles.RemoveAll(o => o.estaDestruido);
     }
 
-
-    private float GenerateNumber(float x)
+    public void DrawBloom(Matrix viewProjection)
     {
-        Random random = new Random();
-        return (float)((random.NextDouble() * 2 - 1) * x);
-    }
-
-    public string Modulo()
-    {
-        return "Corridor";
-    }
-
-    public void DrawBloom(Matrix view, Matrix projection)
-    {
-        foreach (Box box in obstacles)
+        foreach (Box box in _obstacles)
         {
-            box.DrawBloom(view, projection);
+            box.DrawBloom(viewProjection);
         }
+    }
+
+    public static int GetModuleNumber()
+    {
+        return 1;
     }
 }

@@ -10,9 +10,9 @@ using TGC.MonoGame.TP.Models;
 using TGC.MonoGame.TP.Util;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
-using TGC.MonoGame.TP.Models.Obstacles;
-using TGC.MonoGame.TP.Models.BaseModels;
 using System;
+using TGC.MonoGame.TP.Models.Modules.Contract;
+using TGC.MonoGame.TP.Models.BaseModels;
 
 
 
@@ -34,12 +34,10 @@ public class MonoGaming : Game
     private Matrix _projection;
     private Matrix _view;
 
-    private List<IModule> escenario;
     private EscenarioGenerator escenarioGenerator;
 
     private const float VELOCIDAD = 20f;
 
-    private int modulosRecorridos = 0;
     private int puntos = 0;
     private int multiplicador = 1;
     private double acumuladorIntermedioPuntos = 0;
@@ -76,10 +74,11 @@ public class MonoGaming : Game
     public MonoGaming()
     {
         // Maneja la configuracion y la administracion del dispositivo grafico.
-        _graphics = new GraphicsDeviceManager(this);
-
-        _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100;
-        _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
+        _graphics = new GraphicsDeviceManager(this)
+        {
+            PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100,
+            PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100
+        };
 
         // Para que el juego sea pantalla completa se puede usar Graphics IsFullScreen.
         // Carpeta raiz donde va a estar toda la Media.
@@ -88,16 +87,11 @@ public class MonoGaming : Game
         IsMouseVisible = true;
 
 
-        //Inicializo el escenario y su generador infinito
-        escenarioGenerator = new EscenarioGenerator(Content);
-        escenario = null;
     }
 
 
     protected override void Initialize()
     {
-
-
         int Width = GraphicsDevice.Viewport.Width;
         int Height = GraphicsDevice.Viewport.Height;
 
@@ -106,8 +100,17 @@ public class MonoGaming : Game
         LightPosition = Vector3.One * 1000;
         CameraPosition = Vector3.One;
 
-        DebugCamera = new SimpleCamera(GraphicsDevice.Viewport.AspectRatio, Vector3.UnitZ * 150, 400, 2.0f, 1, 3000);
+        //Cargo los modelos
+        Caja_1.InitializeModel(Content);
+        Nave_1.InitializeModel(Content);
+        Nave_2.InitializeModel(Content);
+        Pasillo_Asteroide.InitializeModel(Content);
+        Pasillo.InitializeModel(Content);
+        Pipe.InitializeModel(Content);
 
+        //Inicializo el generador de escenarios (TIENE QUE SER DESPUES DE INICIALIZAR LOS MODELOS)
+        escenarioGenerator = new EscenarioGenerator();
+        escenarioGenerator.GenerarEscenario();
 
         //Como el estado y Exit() solo existen es esta clase, se tienen que crear aca
         List<RectangleButton> pauseButtons = new List<RectangleButton>();
@@ -159,7 +162,7 @@ public class MonoGaming : Game
         background = new Background(Content);
         player = new PlayerShip(Content);
         pauseMenu = new PauseMenu(Content, pauseButtons, spriteBatch);
-        mainMenu = new Menu(Content, menuButtons, spriteBatch);
+        mainMenu = new Menu(menuButtons, spriteBatch);
         hud = new HUD(Content);
         gameOverScreen = new GameOverScreen(Content, menuButtons, spriteBatch, puntos, new Vector2(Width / 2, Height / 2));
 
@@ -187,7 +190,7 @@ public class MonoGaming : Game
         _gaussianBlur.Parameters["screenSize"]
                 .SetValue(new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height));
 
-  
+
         _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
 
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
@@ -201,25 +204,17 @@ public class MonoGaming : Game
         // Play the selected song reference.
         MediaPlayer.Play(song);
 
-        var worldMatrix_1 = Matrix.Identity * Matrix.CreateTranslation(Vector3.Left * 60.5f);
-        var worldMatrix_2 = Matrix.Identity * Matrix.CreateTranslation(Vector3.Left * 60.5f * 2);
-        Content.Load<SoundEffect>(ContentFolderSounds + "Explosion");
+        Content.Load<SoundEffect>(ContentFolderSounds + "Explosion"); //TODO Sacar cuando haga el object pooling de las balas
         Content.Load<SoundEffect>(ContentFolderSounds + "ProyectilLaser"); //Precarga para que no bajen los fps cuando se dispare el primer disparo
-        //Se genera el escenario.
-        escenarioGenerator.GenerarEscenario(ref escenario);
-        BoundingSphereRenderer.Initialize(GraphicsDevice);
+
 
         base.LoadContent();
     }
 
 
-     protected override void Update(GameTime gameTime)
-     {
+    protected override void Update(GameTime gameTime)
+    {
         KeyboardState keyboardState = Keyboard.GetState();
-
-        DebugCamera.Update(gameTime);
-        _view = DebugCamera.View;
-        _projection = DebugCamera.Projection;
 
         if (gameState == GameState.Menu)
         {
@@ -234,15 +229,14 @@ public class MonoGaming : Game
         {
             gameState = GameState.GameOver;
             gameOverScreen.setPuntos(puntos);
-           player.Restart();
+            player.Restart();
             puntos = 0;
             multiplicador = 1;
             vueltasAcumulador = 0;
             acumuladorIntermedioPuntos = 0;
-            modulosRecorridos = 0;
-            escenarioGenerator.GenerarEscenario(ref escenario);
+            escenarioGenerator.GenerarEscenario();
         }
-         else
+        else
         {
             acumuladorIntermedioPuntos += gameTime.ElapsedGameTime.Milliseconds;
             if ((acumuladorIntermedioPuntos / 1000) >= 1)
@@ -252,43 +246,25 @@ public class MonoGaming : Game
                 puntos += multiplicador;
                 multiplicador = (vueltasAcumulador / 5) + 1;
             }
-           hud.Update(puntos, multiplicador);
+            hud.Update(puntos, multiplicador);
 
             if (keyboardState.IsKeyDown(Keys.Escape) && !_wasPaused)
             {
-                 if (gameState == GameState.Playing)
+                if (gameState == GameState.Playing)
                     gameState = GameState.Paused;
-               else if (gameState == GameState.Paused)
-                   gameState = GameState.Playing;
+                else if (gameState == GameState.Paused)
+                    gameState = GameState.Playing;
             }
-           _wasPaused = keyboardState.IsKeyDown(Keys.Escape);
+            _wasPaused = keyboardState.IsKeyDown(Keys.Escape);
 
             if (gameState == GameState.Playing)
-        {
+            {
                 player.Update(gameTime, ref _view, ref _projection, Content);
-              Matrix aux = Matrix.Invert(_view);
-               CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
+                Matrix aux = Matrix.Invert(_view);
+                CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
                 LightPosition = player.Position + (Vector3.Left * 50) + (Vector3.Down * 3);
 
-                if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / EscenarioGenerator.DISTANCE_BETWEEN_MODULES))
-                {
-                    if (modulosRecorridos != 0)
-                    {
-                        escenarioGenerator.AvanzarEscenario(ref escenario);
-                    }
-                    modulosRecorridos++;
-                }
-
-                // tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                // if (tiempoAcumulado >= 0.55f)
-                // {
-                //     tiempoAcumulado = 0f;
-                //     escenarioGenerator.AvanzarEscenario(ref escenario);
-                // }
-                foreach (var modulo in escenario)
-                {
-                    modulo.Update(gameTime, player, escenarioGenerator, ref escenario);
-                }
+                escenarioGenerator.Update(gameTime, player);
 
                 base.Update(gameTime);
             }
@@ -298,34 +274,29 @@ public class MonoGaming : Game
             }
         }
     }
- 
+
 
 
     protected override void Draw(GameTime gameTime)
     {
-
-
         float elapsedTime = (float)gameTime.TotalGameTime.TotalSeconds;
         //El fondo es negro
         GraphicsDevice.Clear(Color.Black);
 
-
-        //TIENE QUE IR ANTES DEL DRAW PRINCIPAL
-        background.Draw(GraphicsDevice);
-
         if (gameState == GameState.Menu)
         {
-            mainMenu.Draw(_view, _projection, LightPosition, CameraPosition);
+            background.Draw(GraphicsDevice);
+            mainMenu.Draw(_view * _projection, LightPosition, CameraPosition);
         }
         else if (gameState == GameState.GameOver)
         {
+            background.Draw(GraphicsDevice);
             gameOverScreen.Draw(GraphicsDevice);
 
         }
         else
         {
 
-            player.Draw(_view, _projection, CameraPosition, LightPosition,GraphicsDevice);
             //Se dibuja la escena principal en el rendertarget main
             #region Pass 1
 
@@ -337,11 +308,13 @@ public class MonoGaming : Game
             GraphicsDevice.SetRenderTarget(_mainSceneRenderTarget);
             GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
 
-            foreach (IModule module in escenario)
-            {
-                module.Draw(_view, _projection, CameraPosition,elapsedTime);
-                //new Box(Content, Matrix.Identity * Matrix.CreateTranslation(LightPosition), 0.0f).Draw(_view, _projection);
-            }
+            var viewProjection = _view * _projection;
+
+            background.Draw(GraphicsDevice);
+
+            player.Draw(viewProjection, CameraPosition, LightPosition, GraphicsDevice);
+
+            escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime);
             hud.Draw(spriteBatch);
 
             #endregion
@@ -353,11 +326,8 @@ public class MonoGaming : Game
             GraphicsDevice.SetRenderTarget(_firstPassBloomRenderTarget);
             GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
 
-            player.DrawBloom(_view, _projection);
-            foreach (IModule module in escenario)
-            {
-                module.DrawBloom(_view, _projection);
-            }
+            player.DrawBloom(viewProjection);
+            escenarioGenerator.DrawBloom(viewProjection);
 
             #endregion
 
@@ -379,7 +349,6 @@ public class MonoGaming : Game
 
             // Set the render target as null, we are drawing into the screen now!
             GraphicsDevice.SetRenderTarget(null);
-            GraphicsDevice.Clear(Color.Black);
 
             _bloomPost.Parameters["Texture"]?.SetValue(_mainSceneRenderTarget);
             _bloomPost.Parameters["bloomTexture"]?.SetValue(_secondPassBloomRenderTarget);
