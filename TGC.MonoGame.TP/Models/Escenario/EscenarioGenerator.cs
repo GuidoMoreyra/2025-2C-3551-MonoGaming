@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using TGC.MonoGame.TP.Models;
+using TGC.MonoGame.TP.Models.Escenario;
 using TGC.MonoGame.TP.Models.Modules;
 using TGC.MonoGame.TP.Models.Modules.Contract;
 
@@ -14,11 +15,11 @@ internal class EscenarioGenerator
 
     private readonly Random rng;
     private readonly Matrix inicio;
-    private readonly (int, IModule)[] modulos;
+    private readonly IModule[] modulos;
     private int lastPosition;
     private int modulosRecorridos;
 
-    Dictionary<int, Stack<IModule>> stackModulos;
+    Dictionary<TipoDeModulo, Stack<IModule>> stackModulos;
 
     public const float DISTANCE_BETWEEN_MODULES = 56.5f;
 
@@ -27,7 +28,7 @@ internal class EscenarioGenerator
         rng = new Random();
         inicio = Matrix.Identity;
 
-        modulos = new (int, IModule)[MAX_MODULES];
+        modulos = new IModule[MAX_MODULES];
     }
 
     public void GenerarEscenario()
@@ -36,54 +37,59 @@ internal class EscenarioGenerator
         stackModulos = [];
 
         Stack<IModule> basicModules = new();
-        stackModulos.Add(BasicModule.GetModuleNumber(), basicModules);
+        stackModulos.Add(TipoDeModulo.Basic, basicModules);
 
-        Stack<IModule> boxModules = new();
-        stackModulos.Add(BoxModule.GetModuleNumber(), boxModules);
+        Stack<IModule> box1Modules = new();
+        stackModulos.Add(TipoDeModulo.Box1, box1Modules);
 
-        Stack<IModule> cargoModules = new();
-        stackModulos.Add(CargoModule.GetModuleNumber(), cargoModules);
+        Stack<IModule> box2Modules = new();
+        stackModulos.Add(TipoDeModulo.Box2, box2Modules);
 
-        Stack<IModule> pipeModules = new();
-        stackModulos.Add(PipeModule.GetModuleNumber(), pipeModules);
+        Stack<IModule> box3Modules = new();
+        stackModulos.Add(TipoDeModulo.Box3, box3Modules);
 
-        Stack<IModule> shipModules = new();
-        stackModulos.Add(ShipModule.GetModuleNumber(), shipModules);
+        Stack<IModule> ship1Modules = new();
+        stackModulos.Add(TipoDeModulo.Ship1, ship1Modules);
 
 
         for (int i = 0; i < MAX_MODULES / 2; i++)
         {
             basicModules.Push(new BasicModule());
-            boxModules.Push(new BoxModule());
-            cargoModules.Push(new CargoModule());
-            pipeModules.Push(new PipeModule());
-            shipModules.Push(new ShipModule());
+            box1Modules.Push(new BoxModule_1());
+            box2Modules.Push(new BoxModule_2());
+            box3Modules.Push(new BoxModule_3());
+            ship1Modules.Push(new ShipModule_1());
         }
 
         Matrix modulo2 = inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES);
 
-        modulos[0] = (PipeModule.GetModuleNumber(), stackModulos.GetValueOrDefault(PipeModule.GetModuleNumber()).Pop());
-        modulos[0].Item2.SetWorldMatrix(inicio);
+        modulos[0] = stackModulos.GetValueOrDefault(TipoDeModulo.Basic).Pop();
+        modulos[0].SetWorldMatrix(inicio);
 
-        modulos[1] = (PipeModule.GetModuleNumber(), stackModulos.GetValueOrDefault(PipeModule.GetModuleNumber()).Pop());
-        modulos[1].Item2.SetWorldMatrix(modulo2);
+        modulos[1] = stackModulos.GetValueOrDefault(TipoDeModulo.Basic).Pop();
+        modulos[1].SetWorldMatrix(modulo2);
 
         for (int i = 2; i < MAX_MODULES; i++)
         {
-            int indiceModulo = rng.Next(MAX_DISTINCT_MODULES);
-            var modulo = GetModule(ref indiceModulo);
-            modulos[i] = (indiceModulo, modulo);
-            modulos[i].Item2.SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * i));
+            modulos[i] = GetRandomModule();
+            modulos[i].SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * i));
         }
 
         lastPosition = 20;
         modulosRecorridos = 0;
     }
 
-    //Devuelve el modulo del tipo indicado o de algun tipo siguiente si esta vacia la pila
-    private IModule GetModule(ref int indice)
+    private IModule GetRandomModule()
     {
-        var stack = stackModulos.GetValueOrDefault(indice);
+        int indiceModulo = rng.Next(MAX_DISTINCT_MODULES);
+        return GetModule(indiceModulo);        
+    }
+
+    //Devuelve el modulo del tipo indicado o de algun tipo siguiente si esta vacia la pila
+    private IModule GetModule(int indice)
+    {
+        TipoDeModulo tipoDeModulo = (TipoDeModulo)Enum.GetValues(typeof(TipoDeModulo)).GetValue(indice);
+        var stack = stackModulos.GetValueOrDefault(tipoDeModulo);
         if (stack.Count != 0)
         {
             return stack.Pop();
@@ -91,7 +97,7 @@ internal class EscenarioGenerator
         else
         {
             indice = (indice + 1) % MAX_DISTINCT_MODULES;
-            return GetModule(ref indice);
+            return GetModule(indice);
         }
     }
 
@@ -99,12 +105,10 @@ internal class EscenarioGenerator
     {
         var posicionModulo = lastPosition % MAX_MODULES;
         var moduloARemover = modulos[posicionModulo];
-        stackModulos.GetValueOrDefault(moduloARemover.Item1).Push(moduloARemover.Item2);
+        stackModulos.GetValueOrDefault(moduloARemover.GetTipoDeModulo()).Push(moduloARemover);
 
-        int indiceModulo = rng.Next(MAX_DISTINCT_MODULES);
-        var modulo = GetModule(ref indiceModulo);
-        modulos[posicionModulo] = (indiceModulo, modulo);
-        modulos[posicionModulo].Item2.SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * lastPosition));
+        modulos[posicionModulo] = GetRandomModule();
+        modulos[posicionModulo].SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * lastPosition));
 
         lastPosition++;
     }
@@ -121,9 +125,11 @@ internal class EscenarioGenerator
             modulosRecorridos++;
         }
 
+        modulos[modulosRecorridos % MAX_MODULES].IsOn = true;
+
         foreach (var module in modulos)
         {
-            module.Item2.Update(gameTime, player);
+            module.Update(gameTime, player);
         }
     }
 
@@ -131,7 +137,7 @@ internal class EscenarioGenerator
     {
         foreach (var module in modulos)
         {
-            module.Item2.Draw(viewProjection, cameraPosition, elapsedTime);
+            module.Draw(viewProjection, cameraPosition, elapsedTime);
         }
     }
 
@@ -139,7 +145,7 @@ internal class EscenarioGenerator
     {
         foreach (var module in modulos)
         {
-            module.Item2.DrawBloom(viewProjection);
+            module.DrawBloom(viewProjection);
         }
     }
 }

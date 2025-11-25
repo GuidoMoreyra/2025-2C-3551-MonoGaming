@@ -1,8 +1,6 @@
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Modules.Contract;
 using TGC.MonoGame.TP.Util;
 
 namespace TGC.MonoGame.TP.Models.Obstacles
@@ -28,7 +26,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 
             _rotationScaleMatrix = Matrix.CreateScale(SCALE) * Matrix.CreateRotationY(MathHelper.ToRadians(MODEL_ROTATION));
 
-            _boundingBox = CalculateBoundingBox(_model);
+            _boundingBox = Utils.CalculateBoundingBox(_model);
         }
 
         public void SetWorldMatrix(Matrix worldMatrix)
@@ -38,31 +36,6 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             _worldMatrix = _rotationScaleMatrix * worldMatrix;
 
             UpdateBoundingBoxWorld();
-        }
-
-        private BoundingBox CalculateBoundingBox(Model model)
-        {
-            Vector3 min = new Vector3(float.MaxValue);
-            Vector3 max = new Vector3(float.MinValue);
-
-            foreach (var mesh in model.Meshes)
-            {
-                var transforms = mesh.ParentBone.Transform;
-                foreach (var part in mesh.MeshParts)
-                {
-                    var vertexData = new VertexPositionNormalTexture[part.NumVertices];
-                    part.VertexBuffer.GetData(vertexData);
-
-                    foreach (var vertex in vertexData)
-                    {
-                        var transformed = Vector3.Transform(vertex.Position, transforms);
-                        min = Vector3.Min(min, transformed);
-                        max = Vector3.Max(max, transformed);
-                    }
-                }
-            }
-
-            return new BoundingBox(min, max);
         }
 
         private void UpdateBoundingBoxWorld(float reductionFactor = 0.6f)
@@ -142,7 +115,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             }
         }
 
-        public void Update(PlayerShip player)
+        public void Update(GameTime gameTime, PlayerShip player)
         {
             if (!_estaDestruido)
             {

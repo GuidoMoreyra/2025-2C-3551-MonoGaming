@@ -7,62 +7,47 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 {
     internal class Box
     {
-        private const float SCALE = 0.05f;
-
         private readonly Model _model;
-        private Matrix _scaleMatrix;
+        private Matrix _rotationScaleMatrix;
         private Matrix _worldMatrix;
         private bool _estaDestruido;
-        private BoundingSphere _boundingSphereLocal;
-        private BoundingSphere _boundingSphereWorld;
-        public BoundingSphere BoundingSphere => _boundingSphereWorld;
-
-        public Box()
+        private BoundingBox _boundingBoxLocal;
+        private OrientedBoundingBox _obbWorld;
+        public OrientedBoundingBox OBB => _obbWorld;
+        public Box(float angle, float y, float z)
         {
             _model = Caja_1.GetModel();
             _estaDestruido = false;
 
-            _scaleMatrix = Matrix.CreateScale(SCALE);
+            _rotationScaleMatrix = Matrix.CreateScale(new Vector3(0.03f, y, z)) * Matrix.CreateRotationX(MathHelper.ToRadians(angle));
 
-            _boundingSphereLocal = CalculateBoundingSphere(_model);
+            _boundingBoxLocal = Utils.CalculateBoundingBox(_model);
         }
 
         public void SetWorldMatrix(Matrix worldMatrix)
         {
             _estaDestruido = false;
-            _worldMatrix = _scaleMatrix * Matrix.CreateRotationX(MathHelper.ToRadians(Utils.GenerateNumber(90))) * worldMatrix;
+            _worldMatrix = _rotationScaleMatrix * worldMatrix;
 
-            UpdateBoundingSphereWorld();
+            UpdateOrientedBoundingBoxWorld();
         }
 
 
-        private BoundingSphere CalculateBoundingSphere(Model model)
+        private void UpdateOrientedBoundingBoxWorld()
         {
-            BoundingSphere mergedSphere = new();
-            bool first = true;
+            // 1. Calcular el centro y las medias extensiones (HalfExtents) de la AABB local
+            Vector3 localCenter = (_boundingBoxLocal.Min + _boundingBoxLocal.Max) / 2.0f;
+            Vector3 localHalfExtents = (_boundingBoxLocal.Max - _boundingBoxLocal.Min) / 2.0f;
 
-            foreach (var mesh in model.Meshes)
-            {
-                Matrix meshTransform = mesh.ParentBone.Transform;
+            // 3. Crear la OBB usando el constructor
+            _obbWorld = new OrientedBoundingBox(
+                localCenter,
+                localHalfExtents,
+                _worldMatrix // Matriz de Escala, Rotación y Traslación.
+            );
 
-                BoundingSphere transformedMeshSphere = mesh.BoundingSphere.Transform(meshTransform);
-
-                if (first)
-                {
-                    mergedSphere = transformedMeshSphere;
-                    first = false;
-                }
-                else
-                {
-                    mergedSphere = BoundingSphere.CreateMerged(mergedSphere, transformedMeshSphere);
-                }
-            }
-            return mergedSphere;
-        }
-
-        private void UpdateBoundingSphereWorld()
-        {
-            _boundingSphereWorld = _boundingSphereLocal.Transform(_worldMatrix);
+            // ¡La OBB se está creando aquí! La variable _obbWorld es inicializada
+            // con los ejes y centro correctos basados en worldTransform.
         }
 
 
@@ -117,18 +102,18 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             }
         }
 
-        //TODO Revisar colisiones
         public void Update(PlayerShip player)
         {
             if (!_estaDestruido)
             {
-                if (BoundingSphere.Intersects(player.BoundingBox) && !player.tieneEscudo)
+                UpdateOrientedBoundingBoxWorld();
+                if (OBB.Intersects(player.BoundingBox) && !player.tieneEscudo) 
                 {
                     player.Destroy();
                 }
                 foreach (var proyectil in player.proyectiles)
                 {
-                    if (BoundingSphere.Intersects(proyectil.BoundingBox))
+                    if (OBB.Intersects(proyectil.BoundingBox)) 
                     {
                         Destroy();
                         proyectil.Destroy(true);

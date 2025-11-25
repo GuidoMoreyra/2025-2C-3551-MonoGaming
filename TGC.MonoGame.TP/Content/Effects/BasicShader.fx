@@ -38,11 +38,25 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     return DiffuseColor;
 }
 
+float4 BloomPS(VertexShaderOutput input) : COLOR
+{
+    return float4(0.0f,0.0f,0.0f, 1.0f);
+}
+
 technique BasicColorDrawing
 {
     pass P0
     {
         VertexShader = compile VS_SHADERMODEL MainVS();
         PixelShader = compile PS_SHADERMODEL MainPS();
+    }
+};
+
+technique Bloom
+{
+    pass P0
+    {
+        VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader = compile PS_SHADERMODEL BloomPS();
     }
 };
