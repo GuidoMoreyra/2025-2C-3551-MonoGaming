@@ -3,10 +3,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.Modules;
-using TGC.MonoGame.TP.Util;
+using TGC.MonoGame.TP.Util; // -> Aquí debe estar definida la estructura OrientedBoundingBox
 using System;
 using TGC.MonoGame.TP.Models.BaseModels;
-
 
 namespace TGC.MonoGame.TP.Models.Obstacles
 {
@@ -15,108 +14,114 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         private Matrix _worldMatrix;
         private Model _model;
 
-        private const float SCALE = 0.0005f;
-
-        private const float ROTACION_MIN = 0f;
-        private const float ROTACION_MAX = 45f;
-
-        private const float VELOCIDAD_ROTACION_MIN = 60f;
-        private const float VELOCIDAD_ROTACION_MAX = 90f;
-
-        private float velocidadDeRotacion;
-
-        private static Random random = new Random();
-        private float rotacionX;
-        private float rotacionY;
+        // Si la escala es uniforme, puedes usar un solo float.
+        private const float SCALE = 0.00075f; 
+        private readonly Matrix _scaleMatrix = Matrix.CreateScale(SCALE);
 
         public bool estaDestruido = false;
 
-        // ✅ BoundingBox
+        // CAMBIO: Usaremos BoundingBox local (AABB) para construir la OBB
         private BoundingBox _boundingBoxLocal;
-        private BoundingBox _boundingBoxWorld;
-        public BoundingBox BoundingBox => _boundingBoxWorld;
+        
+        // CAMBIO: OBB para colisión mundial
+        private OrientedBoundingBox _obbWorld;
+        public OrientedBoundingBox OBB => _obbWorld; 
+
 
         public CargoShip(ContentManager content, Matrix worldMatrix)
         {
-            //Modelo
+            // Modelo
             _model = Nave_2.GetModel(content);
 
-            //Calculo rotacion
-            rotacionY = random.NextSingle() * (ROTACION_MAX - ROTACION_MIN) + ROTACION_MIN;
-            rotacionX = random.NextSingle() * (ROTACION_MAX - ROTACION_MIN) + ROTACION_MIN;
-            velocidadDeRotacion = random.NextSingle() * (VELOCIDAD_ROTACION_MAX - VELOCIDAD_ROTACION_MIN) + VELOCIDAD_ROTACION_MIN;
-
-            //Matriz de mundo
+            // Matriz de mundo
             _worldMatrix = worldMatrix;
 
-            // ✅ Calcular BoundingBox local
+            // ✅ Calcular BoundingBox local (AABB del modelo sin transformaciones)
             _boundingBoxLocal = CalculateBoundingBox(_model);
-            UpdateBoundingBoxWorld();
+            
+            // ✅ Inicializar la OBB
+            UpdateOrientedBoundingBoxWorld();
         }
 
+        // ----------------------------------------------------------------------
+        // CÁLCULO INICIAL DE LA AABB LOCAL (SIN ESCALA NI ROTACIÓN)
+        // ----------------------------------------------------------------------
+
+        /// <summary>
+        /// Calcula la BoundingBox (AABB) local que envuelve al modelo.
+        /// </summary>
         private BoundingBox CalculateBoundingBox(Model model)
         {
-            Vector3 min = new Vector3(float.MaxValue);
-            Vector3 max = new Vector3(float.MinValue);
+            BoundingBox mergedBox = new BoundingBox();
+            bool first = true;
 
             foreach (var mesh in model.Meshes)
             {
-                var meshTransform = mesh.ParentBone.Transform;
-                foreach (var meshPart in mesh.MeshParts)
-                {
-                    var vertexData = new VertexPositionNormalTexture[meshPart.NumVertices];
-                    meshPart.VertexBuffer.GetData(vertexData);
+                // La BoundingSphere de la malla ya está en el espacio local del modelo,
+                // pero a veces se necesita transformarla por el hueso padre.
+                
+                // Opción rápida (Aproximación AABB de la BoundingSphere):
+                Vector3 min = mesh.BoundingSphere.Center - new Vector3(mesh.BoundingSphere.Radius);
+                Vector3 max = mesh.BoundingSphere.Center + new Vector3(mesh.BoundingSphere.Radius);
+                BoundingBox meshBox = new BoundingBox(min, max);
 
-                    foreach (var vertex in vertexData)
-                    {
-                        var transformed = Vector3.Transform(vertex.Position, meshTransform);
-                        min = Vector3.Min(min, transformed);
-                        max = Vector3.Max(max, transformed);
-                    }
+                if (first)
+                {
+                    mergedBox = meshBox;
+                    first = false;
+                }
+                else
+                {
+                    mergedBox = BoundingBox.CreateMerged(mergedBox, meshBox);
                 }
             }
-
-            return new BoundingBox(min, max);
+            return mergedBox;
         }
 
-        private void UpdateBoundingBoxWorld(float reductionFactor = 0.6f)
+        // ----------------------------------------------------------------------
+        // ACTUALIZACIÓN DE LA OBB MUNDIAL
+        // ----------------------------------------------------------------------
+
+        /// <summary>
+        /// Actualiza la OBB aplicando Rotación, Escala y Traslación.
+        /// </summary>
+        private void UpdateOrientedBoundingBoxWorld()
         {
-            var rotationXMat = Matrix.CreateRotationX(MathHelper.ToRadians(rotacionX));
-            var rotationYMat = Matrix.CreateRotationY(MathHelper.ToRadians(rotacionY));
-            var scaleMatrix = Matrix.CreateScale(SCALE);
-            var worldTransform = rotationYMat * rotationXMat * scaleMatrix * _worldMatrix;
-
-            // Obtiene los 8 vértices del bounding box original
-            var corners = _boundingBoxLocal.GetCorners();
-            var transformedCorners = new Vector3[corners.Length];
-            for (int i = 0; i < corners.Length; i++)
-                transformedCorners[i] = Vector3.Transform(corners[i], worldTransform);
-
-            // Calcula el centro real del bounding box transformado
-            Vector3 center = Vector3.Zero;
-            foreach (var v in transformedCorners)
-                center += v;
-            center /= transformedCorners.Length;
-
-            // Reduce los vértices respecto al centro
-            for (int i = 0; i < transformedCorners.Length; i++)
-                transformedCorners[i] = center + (transformedCorners[i] - center) * reductionFactor;
-
-            // Crea el bounding box final
-            _boundingBoxWorld = BoundingBox.CreateFromPoints(transformedCorners);
+            // 1. Calcular el centro y las medias extensiones (HalfExtents) de la AABB local
+            Vector3 localCenter = (_boundingBoxLocal.Min + _boundingBoxLocal.Max) / 2.0f;
+            Vector3 localHalfExtents = (_boundingBoxLocal.Max - _boundingBoxLocal.Min) / 2.0f;
+            
+            // 2. Crear la matriz de transformación COMPLETA
+            // Orden: Escala * Rotación (si la hay) * Traslación
+            
+            // NOTA: Si _worldMatrix solo contiene traslación, la rotación debe aplicarse.
+            // Aquí asumimos que la rotación ya está implícita en _worldMatrix o que no rota activamente.
+            // Si el objeto NO ROTA, _worldMatrix es Traslación. Si rota, _worldMatrix es Rotación * Traslación.
+            
+            // Usaremos la matriz de mundo tal como se usa en Draw:
+            Matrix worldTransform = _scaleMatrix * _worldMatrix;
+            
+            // 3. Crear la OBB usando el constructor
+            _obbWorld = new OrientedBoundingBox(
+                localCenter, 
+                localHalfExtents, 
+                worldTransform
+            );
         }
+
+        // ----------------------------------------------------------------------
+        // MÉTODOS DRAW, SETWORLDMATRIX Y DESTROY (sin cambios funcionales)
+        // ----------------------------------------------------------------------
 
         public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
         {
-            var rotationXMat = Matrix.CreateRotationX(MathHelper.ToRadians(rotacionX));
-            var rotationYMat = Matrix.CreateRotationY(MathHelper.ToRadians(rotacionY));
-
             foreach (var mesh in _model.Meshes)
             {
                 var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * rotationYMat * rotationXMat * scaleMatrix * _worldMatrix;
+                // Usamos la matriz de escala precalculada (_scaleMatrix)
+                var world = meshWorld * _scaleMatrix * _worldMatrix; 
 
+                // ... (Draw logic) ...
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
@@ -137,15 +142,12 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 
         public void DrawBloom(Matrix view, Matrix projection)
         {
-            var rotationXMat = Matrix.CreateRotationX(MathHelper.ToRadians(rotacionX));
-            var rotationYMat = Matrix.CreateRotationY(MathHelper.ToRadians(rotacionY));
-
             foreach (var mesh in _model.Meshes)
             {
                 var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * rotationYMat * rotationXMat * scaleMatrix * _worldMatrix;
+                var world = meshWorld * _scaleMatrix * _worldMatrix;
 
+                // ... (DrawBloom logic) ...
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
@@ -163,40 +165,44 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             }
         }
 
+        public void SetWorldMatrix(Matrix newWorld)
+        {
+            _worldMatrix = newWorld;
+            // ✅ Actualizar la OBB cuando la matriz de mundo cambia
+            UpdateOrientedBoundingBoxWorld(); 
+        }
+
+        public void Destroy()
+        {
+            estaDestruido = true;
+        }
+
+        // ----------------------------------------------------------------------
+        // ACTUALIZACIÓN Y COLISIÓN
+        // ----------------------------------------------------------------------
+
         public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
         {
-            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            rotacionX += velocidadDeRotacion * deltaTime;
+            // ✅ Actualizar OBB (si el objeto se mueve, su matriz de mundo cambió antes de esta llamada)
+            UpdateOrientedBoundingBoxWorld(); 
 
-            if (this.BoundingBox.Intersects(player.BoundingBox) && !player.tieneEscudo)
+            // CAMBIO: Colisión OBB (CargoShip) vs AABB (PlayerShip)
+            // Asumiendo que player.BoundingBox es una AABB.
+            if (OBB.Intersects(player.BoundingBox) && !player.tieneEscudo)
             {
                 player.Destroy();
-                Console.WriteLine("Caja");
+                Console.WriteLine("Colisión CargoShip vs Player");
             }
+            
             foreach (var proyectil in player.proyectiles)
             {
-                if (this.BoundingBox.Intersects(proyectil.BoundingBox))
+                // CAMBIO: Colisión OBB (CargoShip) vs AABB (Proyectil)
+                if (OBB.Intersects(proyectil.BoundingBox)) 
                 {
                     this.Destroy();
                     proyectil.Destroy(true);
                 }
             }
-
-
-            UpdateBoundingBoxWorld();
-        }
-
-        // Si en algún momento movés el objeto, también actualizarías _worldMatrix y llamás UpdateBoundingBoxWorld()
-        public void SetWorldMatrix(Matrix newWorld)
-        {
-            _worldMatrix = newWorld;
-            UpdateBoundingBoxWorld();
-        }
-
-
-        public void Destroy()
-        {
-            estaDestruido = true;
         }
     }
 }

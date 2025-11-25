@@ -502,7 +502,7 @@
 /processorParam:TextureFormat=Color
 /build:Textures/Pasillo/Pasillo_Tex.jpg
 
-#begin Textures/Pipe/Pipe_Texture.png
+#begin Textures/Pipe/Pipe_Texture.jpeg
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -512,5 +512,5 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Textures/Pipe/Pipe_Texture.png
+/build:Textures/Pipe/Pipe_Texture.jpeg
 

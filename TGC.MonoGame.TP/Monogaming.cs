@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Media;
 using TGC.MonoGame.TP.Models.Obstacles;
 using TGC.MonoGame.TP.Models.BaseModels;
 using System;
+using Microsoft.Xna.Framework.Content;
 
 
 
@@ -187,27 +188,22 @@ public class MonoGaming : Game
         _gaussianBlur.Parameters["screenSize"]
                 .SetValue(new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height));
 
-  
+
         _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
+    
 
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
-
-        // check the current state of the MediaPlayer.
         if (MediaPlayer.State != MediaState.Stopped)
         {
-            MediaPlayer.Stop(); // stop current audio playback if playing or paused.
+            MediaPlayer.Stop();
         }
         MediaPlayer.IsRepeating = true;
-        // Play the selected song reference.
         MediaPlayer.Play(song);
-
-        var worldMatrix_1 = Matrix.Identity * Matrix.CreateTranslation(Vector3.Left * 60.5f);
-        var worldMatrix_2 = Matrix.Identity * Matrix.CreateTranslation(Vector3.Left * 60.5f * 2);
         Content.Load<SoundEffect>(ContentFolderSounds + "Explosion");
         Content.Load<SoundEffect>(ContentFolderSounds + "ProyectilLaser"); //Precarga para que no bajen los fps cuando se dispare el primer disparo
-        //Se genera el escenario.
-        escenarioGenerator.GenerarEscenario(ref escenario);
-        BoundingSphereRenderer.Initialize(GraphicsDevice);
+
+
+        escenario = new List<IModule>{new ShipMdoule_1(Content, Matrix.Identity)};
 
         base.LoadContent();
     }
@@ -265,26 +261,20 @@ public class MonoGaming : Game
 
             if (gameState == GameState.Playing)
         {
-                player.Update(gameTime, ref _view, ref _projection, Content);
-              Matrix aux = Matrix.Invert(_view);
-               CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
+                //player.Update(gameTime, ref _view, ref _projection, Content);
+                Matrix aux = Matrix.Invert(_view);
+                CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
                 LightPosition = player.Position + (Vector3.Left * 50) + (Vector3.Down * 3);
 
-                if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / EscenarioGenerator.DISTANCE_BETWEEN_MODULES))
-                {
-                    if (modulosRecorridos != 0)
-                    {
-                        escenarioGenerator.AvanzarEscenario(ref escenario);
-                    }
-                    modulosRecorridos++;
-                }
+                //if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / EscenarioGenerator.DISTANCE_BETWEEN_MODULES))
+                //{
+                //    if (modulosRecorridos != 0)
+                //    {
+                //        escenarioGenerator.AvanzarEscenario(ref escenario);
+                //    }
+                //    modulosRecorridos++;
+                //}
 
-                // tiempoAcumulado += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                // if (tiempoAcumulado >= 0.55f)
-                // {
-                //     tiempoAcumulado = 0f;
-                //     escenarioGenerator.AvanzarEscenario(ref escenario);
-                // }
                 foreach (var modulo in escenario)
                 {
                     modulo.Update(gameTime, player, escenarioGenerator, ref escenario);
@@ -394,9 +384,6 @@ public class MonoGaming : Game
 
             #endregion
         }
-
-        //Cada modelo deberia tener su propio draw.
-        //A menos que sea para prueba no deberian haber dibujos en este metodo
     }
 
 

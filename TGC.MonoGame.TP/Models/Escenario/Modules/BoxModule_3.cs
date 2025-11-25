@@ -5,55 +5,47 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
 using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.Escenario;
 using TGC.MonoGame.TP.Util;
+
+
 
 namespace TGC.MonoGame.TP.Models.Modules;
 
-internal class ShipModule : IModule
+internal class BoxModule_3 : IModule
 {
     private Matrix _worldMatrix;
     private Model _model;
-    private List<Ship> obstacles = new List<Ship>();
+    private List<Box> obstacles = new List<Box>();
 
-    //Medidas del Modulo
+    public Boolean isOn { get; set; }   
+    private TipoDeModulo tipo = TipoDeModulo.Corridor;
     private float scale = 0.1f;
-    private readonly int Up = 6;
-    private readonly int Rigth = 20;
-    private readonly int Foward = 13;
 
-    public ShipModule(ContentManager content, Matrix worldMatrix)
+    public BoxModule_3(ContentManager content, Matrix worldMatrix)
     {
-        //Instancio modelo
+        //Se construye los datos el pasillo
         _model = Pasillo.GetModel(content);
-
-        //Matriz de mundo
         _worldMatrix = worldMatrix;
 
-        GenerateObstacles(content, worldMatrix);
-    }
+        //Se construyen sus obstaculos
+    
 
-    public void GenerateDecoration()
-    {
-        //Deberia generar las decoraciones del modulo.
-    }
+        Matrix worldMatrix_caja_1 =  worldMatrix * Matrix.CreateTranslation(Vector3.Down * 15f);
+        
+
+        var Caja_1 = new Box(content, worldMatrix_caja_1, 0, 0.2f, 0.5f);
 
 
-    //Deberia generar  una pocision aleatoria con respecto del centro del modulo.
-    //De momento se deja con una posicion fija.
-
-    public void GenerateObstacles(ContentManager content, Matrix worldMatrix)
-    {
-        int cantidadMaximaDeObstaculos = 2;
-        for (int index = 0; index < cantidadMaximaDeObstaculos; index++)
-        {
-            Matrix traslacionDeNave = Matrix.CreateTranslation(Vector3.Forward * GenerateNumber(this.Foward) + Vector3.Up * GenerateNumber(this.Up) + Vector3.Right * GenerateNumber(this.Rigth));
-            obstacles.Add(new Ship(content, worldMatrix * traslacionDeNave));
-        }
+        obstacles.Add(Caja_1);
 
     }
+
 
     public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition,float elapsedTime)
     {
+
+        // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
 
         foreach (var mesh in _model.Meshes)
         {
@@ -76,9 +68,9 @@ internal class ShipModule : IModule
             mesh.Draw();
         }
 
-        foreach (Ship ship in obstacles)
+        foreach (var obstacle in obstacles)
         {
-            ship.Draw(view, projection);
+            obstacle.Draw(view, projection);
         }
     }
 
@@ -92,24 +84,16 @@ internal class ShipModule : IModule
         obstacles.RemoveAll(o => o.estaDestruido);
     }
 
-    private float GenerateNumber(float x)
-    {
-        Random random = new Random();
-        // random.NextDouble() devuelve un valor entre 0.0 y 1.0
-        // Lo transformamos para que quede entre -x y +x
-        return (float)((random.NextDouble() * 2 - 1) * x);
-    }
-
-    public string Modulo()
-    {
-        return "Corridor";
-    }
-
     public void DrawBloom(Matrix view, Matrix projection)
     {
-        foreach (Ship ship in obstacles)
+        foreach (Box box in obstacles)
         {
-            ship.DrawBloom(view, projection);
+            box.DrawBloom(view, projection);
         }
+    }
+
+    public TipoDeModulo Modulo()
+    {
+        return tipo;
     }
 }

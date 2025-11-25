@@ -1,53 +1,47 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
 using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.Escenario;
 using TGC.MonoGame.TP.Util;
+
 
 
 namespace TGC.MonoGame.TP.Models.Modules;
 
-internal class BoxModule : IModule
+internal class BoxModule_2 : IModule
 {
     private Matrix _worldMatrix;
     private Model _model;
     private List<Box> obstacles = new List<Box>();
-    //Medidas del Modulo
+
+    public Boolean isOn { get; set; }
+
+    private TipoDeModulo tipo = TipoDeModulo.Corridor;
     private float scale = 0.1f;
-    private readonly int Up = 8;
-    private readonly int Right = 25;
-    private readonly int Foward = 18;
 
-    public BoxModule(ContentManager content, Matrix worldMatrix)
+    public BoxModule_2(ContentManager content, Matrix worldMatrix)
     {
+        //Se construye los datos el pasillo
         _model = Pasillo.GetModel(content);
-
         _worldMatrix = worldMatrix;
 
-        GenerateObstacles(content, worldMatrix);
+        //Se construyen sus obstaculos
+    
+
+        Matrix worldMatrix_caja_1 =  worldMatrix * Matrix.CreateTranslation(Vector3.Up*13f + Vector3.Down * 15f);
+        
+
+        var Caja_1 = new Box(content, worldMatrix_caja_1, 0, 0.2f, 0.5f);
+
+
+        obstacles.Add(Caja_1);
+
     }
 
-    public void GenerateDecoration()
-    {
-        //Deberia generar las decoraciones del modulo.
-    }
-
-
-    //Deberia generar  una pocision aleatoria con respecto del centro del modulo.
-    //De momento se deja con una posicion fija.
-    public void GenerateObstacles(ContentManager content, Matrix worldMatrix)
-    {
-        int cantidadMaximaDeObstaculos = 6;
-        for (int index = 0; index < cantidadMaximaDeObstaculos; index++)
-        {
-            Matrix traslacionDeCaja = Matrix.CreateTranslation(Vector3.Forward * GenerateNumber(Foward) + Vector3.Up * GenerateNumber(Up) + Vector3.Right * GenerateNumber(Right));
-            obstacles.Add(new Box(content, worldMatrix * traslacionDeCaja, GenerateNumber(90)));
-        }
-    }
 
     public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition,float elapsedTime)
     {
@@ -75,9 +69,9 @@ internal class BoxModule : IModule
             mesh.Draw();
         }
 
-        foreach (Box box in obstacles)
+        foreach (var obstacle in obstacles)
         {
-            box.Draw(view, projection);
+            obstacle.Draw(view, projection);
         }
     }
 
@@ -91,23 +85,16 @@ internal class BoxModule : IModule
         obstacles.RemoveAll(o => o.estaDestruido);
     }
 
-
-    private float GenerateNumber(float x)
-    {
-        Random random = new Random();
-        return (float)((random.NextDouble() * 2 - 1) * x);
-    }
-
-    public string Modulo()
-    {
-        return "Corridor";
-    }
-
     public void DrawBloom(Matrix view, Matrix projection)
     {
         foreach (Box box in obstacles)
         {
             box.DrawBloom(view, projection);
         }
+    }
+
+    public TipoDeModulo Modulo()
+    {
+        return tipo;
     }
 }

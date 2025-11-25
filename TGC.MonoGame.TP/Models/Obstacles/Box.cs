@@ -14,113 +14,86 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         private Matrix _worldMatrix;
         private Model _model;
         private Matrix _rotation;
-        private const float SCALE = 0.05f;
 
         public bool estaDestruido = false;
+        
+        private readonly Vector3 SCALE ; 
 
-        // ✅ BoundingBox
-        // private BoundingBox _boundingBoxLocal;
-        // private BoundingBox _boundingBoxWorld;
-        // public BoundingBox BoundingBox => _boundingBoxWorld;
-
-        private BoundingSphere _boundingSphereLocal;
-        private BoundingSphere _boundingSphereWorld;
-        public BoundingSphere BoundingSphere => _boundingSphereWorld;
+  
+        private BoundingBox _boundingBoxLocal;
+   
+        private OrientedBoundingBox _obbWorld;
+        public OrientedBoundingBox OBB => _obbWorld; 
 
 
-        public Box(ContentManager content, Matrix worldMatrix, float angle)
+        public Box(ContentManager content, Matrix worldMatrix, float angle , float y , float z)
         {
             _model = Caja_1.GetModel(content);
 
             _worldMatrix = worldMatrix;
+
             _rotation = Matrix.CreateRotationX(MathHelper.ToRadians(angle));
 
-            _boundingSphereLocal = CalculateBoundingSphere(_model);
-            UpdateBoundingSphereWorld();
+            _boundingBoxLocal = CalculateBoundingBox(_model);
 
-            // ✅ Calcular bounding box local
-            // _boundingBoxLocal = CalculateBoundingBox(_model);
-            // UpdateBoundingBoxWorld();
+            SCALE = new Vector3(0.03f, y, z); 
+
+            
+            UpdateOrientedBoundingBoxWorld(); 
         }
 
-        private BoundingSphere CalculateBoundingSphere(Model model)
+        private BoundingBox CalculateBoundingBox(Model model)
         {
-            BoundingSphere mergedSphere = new BoundingSphere();
+            BoundingBox mergedBox = new BoundingBox();
             bool first = true;
 
             foreach (var mesh in model.Meshes)
             {
                 Matrix meshTransform = mesh.ParentBone.Transform;
-
-                BoundingSphere transformedMeshSphere = mesh.BoundingSphere.Transform(meshTransform);
+                         
+                Vector3 min = mesh.BoundingSphere.Center - new Vector3(mesh.BoundingSphere.Radius);
+                Vector3 max = mesh.BoundingSphere.Center + new Vector3(mesh.BoundingSphere.Radius);
+                BoundingBox meshBox = new BoundingBox(min, max);
 
                 if (first)
                 {
-                    mergedSphere = transformedMeshSphere;
+                    mergedBox = meshBox;
                     first = false;
                 }
                 else
                 {
-                    mergedSphere = BoundingSphere.CreateMerged(mergedSphere, transformedMeshSphere);
+                    mergedBox = BoundingBox.CreateMerged(mergedBox, meshBox);
                 }
             }
-            return mergedSphere;
+            return mergedBox;
         }
-
-        // private BoundingBox CalculateBoundingBox(Model model)
-        // {
-        //     Vector3 min = new Vector3(float.MaxValue);
-        //     Vector3 max = new Vector3(float.MinValue);
-
-        //     foreach (var mesh in model.Meshes)
-        //     {
-        //         var meshTransform = mesh.ParentBone.Transform;
-        //         foreach (var meshPart in mesh.MeshParts)
-        //         {
-        //             var vertexData = new VertexPositionNormalTexture[meshPart.NumVertices];
-        //             meshPart.VertexBuffer.GetData(vertexData);
-
-        //             foreach (var vertex in vertexData)
-        //             {
-        //                 var transformed = Vector3.Transform(vertex.Position, meshTransform);
-        //                 min = Vector3.Min(min, transformed);
-        //                 max = Vector3.Max(max, transformed);
-        //             }
-        //         }
-        //     }
-
-        //     return new BoundingBox(min, max);
-        // }
-
-
-        // private void UpdateBoundingBoxWorld(float reductionFactor = 0.6f)
-        // {
-        //     var scaleMatrix = Matrix.CreateScale(SCALE);
-        //     var worldTransform = scaleMatrix * _worldMatrix;
-
-        //     var corners = _boundingBoxLocal.GetCorners();
-        //     var transformedCorners = new Vector3[corners.Length];
-        //     for (int i = 0; i < corners.Length; i++)
-        //         transformedCorners[i] = Vector3.Transform(corners[i], worldTransform);
-
-        //     Vector3 center = Vector3.Zero;
-        //     foreach (var v in transformedCorners)
-        //         center += v;
-        //     center /= transformedCorners.Length;
-
-        //     for (int i = 0; i < transformedCorners.Length; i++)
-        //         transformedCorners[i] = center + (transformedCorners[i] - center) * reductionFactor;
-
-        //     _boundingBoxWorld = BoundingBox.CreateFromPoints(transformedCorners);
-        // }
-
-        private void UpdateBoundingSphereWorld()
+        private void UpdateOrientedBoundingBoxWorld()
         {
-            var scaleMatrix = Matrix.CreateScale(SCALE);
-            Matrix worldTransform = scaleMatrix * _rotation * _worldMatrix;
+            // 1. Calcular el centro y las medias extensiones (HalfExtents) de la AABB local
+            Vector3 localCenter = (_boundingBoxLocal.Min + _boundingBoxLocal.Max) / 2.0f;
+            Vector3 localHalfExtents = (_boundingBoxLocal.Max - _boundingBoxLocal.Min) / 2.0f;
 
-            _boundingSphereWorld = _boundingSphereLocal.Transform(worldTransform);
+            // 2. Crear la matriz de transformación final (World Matrix)
+            // El orden correcto de las transformaciones es:
+            Matrix scaleMatrix = Matrix.CreateScale(SCALE);
+            
+            // Esta matriz worldTransform es la matriz de mundo COMPLETA
+            Matrix worldTransform = scaleMatrix * _rotation * _worldMatrix; 
+            
+            // NOTA: Si _worldMatrix ya contiene rotación o escala de la creación del escenario,
+            // esto es un riesgo de doble transformación. Asumiremos que _worldMatrix es SOLO traslación.
+
+            // 3. Crear la OBB usando el constructor
+            _obbWorld = new OrientedBoundingBox(
+                localCenter, 
+                localHalfExtents, 
+                worldTransform // Matriz de Escala, Rotación y Traslación.
+            );
+            
+            // ¡La OBB se está creando aquí! La variable _obbWorld es inicializada
+            // con los ejes y centro correctos basados en worldTransform.
         }
+
 
 
         public void Draw(Matrix view, Matrix projection)
@@ -129,10 +102,12 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             {
                 var meshWorld = mesh.ParentBone.Transform;
                 var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * _rotation * scaleMatrix * _worldMatrix;
+
+                var world = meshWorld * scaleMatrix * _rotation * _worldMatrix; 
 
                 foreach (var meshPart in mesh.MeshParts)
                 {
+
                     var effect = meshPart.Effect;
                     effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
                     effect.Parameters["View"].SetValue(view);
@@ -146,18 +121,16 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 }
                 mesh.Draw();
             }
-            // Dibujar el wireframe de la esfera
-            // Color debugColor = Color.Red; // Por ejemplo, rojo
-            // BoundingSphereRenderer.Draw(_boundingSphereWorld, view, projection, debugColor);
         }
 
         public void DrawBloom(Matrix view, Matrix projection)
         {
+
             foreach (var mesh in _model.Meshes)
             {
                 var meshWorld = mesh.ParentBone.Transform;
                 var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * _rotation * scaleMatrix * _worldMatrix;
+                var world = meshWorld * scaleMatrix * _rotation * _worldMatrix;
 
                 foreach (var meshPart in mesh.MeshParts)
                 {
@@ -176,43 +149,30 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             }
         }
 
-        // ✅ Si la caja se mueve, llamá esto con el nuevo worldMatrix
         public void SetWorldMatrix(Matrix newWorld)
         {
             _worldMatrix = newWorld;
-            UpdateBoundingSphereWorld();
-            // UpdateBoundingBoxWorld();
+            UpdateOrientedBoundingBoxWorld(); 
         }
 
         public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
         {
-            if (BoundingSphere.Intersects(player.BoundingBox) && !player.tieneEscudo)
+
+            if (OBB.Intersects(player.BoundingBox) && !player.tieneEscudo) 
             {
                 player.Destroy();
                 Console.WriteLine("Caja");
             }
+            
             foreach (var proyectil in player.proyectiles)
             {
-                if (BoundingSphere.Intersects(proyectil.BoundingBox))
+                if (OBB.Intersects(proyectil.BoundingBox)) 
                 {
                     Destroy();
                     proyectil.Destroy(true);
                 }
             }
-            // if (this.BoundingBox.Intersects(player.BoundingBox))
-            // {
-            //     player.Restart();
-            //     Console.WriteLine("Caja");
-            //     generator.GenerarEscenario(ref escenario);
-            // }
-            // foreach (var proyectil in player.proyectiles)
-            // {
-            //     if (this.BoundingBox.Intersects(proyectil.BoundingBox))
-            //     {
-            //         this.Destroy();
-            //         proyectil.Destroy();
-            //     }
-            // }
+
         }
 
         public void Destroy()

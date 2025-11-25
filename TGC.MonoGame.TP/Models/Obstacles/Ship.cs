@@ -140,7 +140,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             UpdateBoundingBoxWorld();
         }
 
-        public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator, ref List<IModule> escenario)
+        public void Update(GameTime gameTime, PlayerShip player)
         {
             if (this.BoundingBox.Intersects(player.BoundingBox) && !player.tieneEscudo)
             {
@@ -156,7 +156,9 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 }
             }
         }
-
+        public void Reset()
+        {
+        }
         public void Destroy()
         {
             estaDestruido = true;

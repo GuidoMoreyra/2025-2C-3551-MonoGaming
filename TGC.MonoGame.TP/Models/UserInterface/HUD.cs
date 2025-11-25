@@ -32,7 +32,7 @@ namespace TGC.MonoGame.TP.Models
 
             Vector2 multplicadorPosition = new Vector2(0, puntosSize.Y + 5);
 
-            spriteBatch.DrawString(_font, "Mult: " + multiplicador, multplicadorPosition, Color.LightCyan);
+            spriteBatch.DrawString(_font, "MULT  : " + multiplicador, multplicadorPosition, Color.LightCyan);
 
             spriteBatch.End();
         }
