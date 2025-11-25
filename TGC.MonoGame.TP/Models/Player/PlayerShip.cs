@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
+using TGC.MonoGame.TP.Models.Obstacles;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -25,6 +26,9 @@ namespace TGC.MonoGame.TP.Models
         private int cantidad_de_balas = 10;
         public List<Proyectil> proyectiles = new List<Proyectil>();
 
+        public List<DestroyableBox> objetivos = null;
+
+        private DestroyableBox obj = null;
         private float tiempoAcumuladoEscudo = 0f;
         private float tiempoAcumuladoBalas = 0f;
         private const float VELOCIDAD = 28.25F;
@@ -205,18 +209,20 @@ namespace TGC.MonoGame.TP.Models
             nuevoMovimiento += Vector3.Left * 4 * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             distanciaRecorrida += nuevoMovimiento.X;
-
+            Matrix objWorldMatrix;
             proyectiles.RemoveAll(o => o.estaDestruido);
-
+            if(objetivos != null){ Console.WriteLine("Objetivo encontrado");obj = objetivos[0]; objWorldMatrix = objetivos[0]._worldMatrix;}
+            else{objWorldMatrix  = Matrix.Identity;}
             tiempoAcumuladoBalas += (float)gameTime.ElapsedGameTime.TotalSeconds;
             tiempoAcumuladoEscudo += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (cantidad_de_balas > 0 && tiempoAcumuladoBalas >= TIME_BETWEEN_SHOTS)
+            if (cantidad_de_balas > 0 && tiempoAcumuladoBalas >= TIME_BETWEEN_SHOTS && obj != null)
             {
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
+                    objetivos = null;
                     cantidad_de_balas--;
                     tiempoAcumuladoBalas = 0f;
-                    proyectiles.Add(new Proyectil(content, _worldMatrix, gameTime.TotalGameTime.TotalSeconds));
+                    proyectiles.Add(new Proyectil(content, _worldMatrix, gameTime.TotalGameTime.TotalSeconds, objWorldMatrix));
                 }
 
             }
@@ -237,13 +243,13 @@ namespace TGC.MonoGame.TP.Models
                 angulo += VELOCIDAD_DE_GIRO * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (keyboardState.IsKeyDown(Keys.A))
-                nuevoMovimiento += Vector3.Backward * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Backward * 2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.W))
-                nuevoMovimiento += Vector3.Up * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Up *  2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.S))
-                nuevoMovimiento += Vector3.Down * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Down *  2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.D))
-                nuevoMovimiento += Vector3.Forward * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Forward *  2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (keyboardState.IsKeyDown(Keys.G) && !toogleGodModeActive)
             {

@@ -13,7 +13,7 @@ internal class ShipModule_1 : IModule
 {
     private const float SCALE = 0.1f;
     private const TipoDeModulo TIPO = TipoDeModulo.Ship1;
-
+    public List<DestroyableBox> obstaclesD{ get; set; }
     private readonly Model _model;
     private readonly List<Ship> _dinamicObstacles;
     private readonly CargoShip _staticObstacle;
@@ -58,7 +58,7 @@ internal class ShipModule_1 : IModule
         _staticObstacle.SetWorldMatrix(_cargoShipMatrix * worldMatrix);
     }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime)
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)
@@ -96,6 +96,12 @@ internal class ShipModule_1 : IModule
                 ship.Update(gameTime, player);
             }
             _staticObstacle.Update(player);
+        }else
+        {
+            foreach (var ship in _dinamicObstacles)
+            {
+                ship.Reset();
+            }
         }
     }
 

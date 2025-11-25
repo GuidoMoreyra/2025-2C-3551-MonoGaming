@@ -1,3 +1,4 @@
+
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
@@ -9,7 +10,8 @@ namespace TGC.MonoGame.TP.Models.Obstacles
     {
         private const float SCALE = 0.02f;
         private const float MODEL_ROTATION = 90f;
-
+        private float traslacion = 0;
+        private const float VELOCIDAD = 9000f;
         private readonly Model _model;
         private readonly Matrix _rotationScaleMatrix;
         private bool _estaDestruido = false;
@@ -67,7 +69,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 foreach (var mesh in _model.Meshes)
                 {
                     var meshWorld = mesh.ParentBone.Transform;
-                    var world = meshWorld * _worldMatrix;
+                    var world = meshWorld * Matrix.CreateTranslation(Vector3.Backward * traslacion) * _worldMatrix;
                     var inverseTrasposeWorld = Matrix.Transpose(Matrix.Invert(world));
 
                     foreach (var meshPart in mesh.MeshParts)
@@ -95,7 +97,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 foreach (var mesh in _model.Meshes)
                 {
                     var meshWorld = mesh.ParentBone.Transform;
-                    var world = meshWorld * _worldMatrix;
+                    var world = meshWorld * Matrix.CreateTranslation(Vector3.Backward * traslacion) *  _worldMatrix;
                     var inverseTrasposeWorld = Matrix.Transpose(Matrix.Invert(world));
                     foreach (var meshPart in mesh.MeshParts)
                     {
@@ -116,7 +118,10 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         }
 
         public void Update(GameTime gameTime, PlayerShip player)
-        {
+        {   
+
+            traslacion += VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            
             if (!_estaDestruido)
             {
                 if (BoundingBox.Intersects(player.BoundingBox) && !player.tieneEscudo)
@@ -132,6 +137,11 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                     }
                 }
             }
+        }
+
+        public void Reset()
+        {
+            traslacion = 0;
         }
 
         public void Destroy()

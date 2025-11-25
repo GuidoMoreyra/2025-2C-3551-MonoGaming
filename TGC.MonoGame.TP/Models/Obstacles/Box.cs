@@ -8,12 +8,16 @@ namespace TGC.MonoGame.TP.Models.Obstacles
     internal class Box
     {
         private readonly Model _model;
-        private Matrix _rotationScaleMatrix;
+         private Matrix _rotationScaleMatrix;
         private Matrix _worldMatrix;
         private bool _estaDestruido;
         private BoundingBox _boundingBoxLocal;
         private OrientedBoundingBox _obbWorld;
         public OrientedBoundingBox OBB => _obbWorld;
+
+        // Definiciones de distancia para la opacidad
+        private const float MAX_DISTANCE = 50f; // Completamente opaco a partir de esta distancia
+        private const float MIN_DISTANCE = 20f;  // Completamente transparente (o casi) a esta distancia
         public Box(float angle, float y, float z)
         {
             _model = Caja_1.GetModel();
@@ -51,10 +55,34 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         }
 
 
-        public void Draw(Matrix viewProjection)
+public void Draw(Matrix viewProjection, Vector3 playerPosition,GraphicsDevice _graphicsDevice ) 
         {
             if (!_estaDestruido)
             {
+                // 2. Cálculo de la Opacidad
+                Vector3 modelPosition = _worldMatrix.Translation; 
+                float distance = Vector3.Distance(playerPosition, modelPosition);
+
+                float opacity = 1.0f; 
+                
+                if (distance < MAX_DISTANCE)
+                {
+                    // Mapear la distancia de [MIN_DISTANCE, MAX_DISTANCE] a [0, 1]
+                    // El valor 't' es 1.0 cuando está lejos y 0.0 cuando está cerca.
+                    float t = MathHelper.Clamp((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0f, 1f);
+                    opacity = t; 
+                }
+
+                // 3. 🚨 Habilitar el Blending para transparencia (CRUCIAL)
+                if (opacity < 1.0f)
+                {
+                    _graphicsDevice.BlendState = BlendState.AlphaBlend;
+                }
+                else
+                {
+                    _graphicsDevice.BlendState = BlendState.Opaque;
+                }
+
                 foreach (var mesh in _model.Meshes)
                 {
                     var meshWorld = mesh.ParentBone.Transform;
@@ -64,6 +92,13 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                     {
                         var effect = meshPart.Effect;
                         effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
+                        
+                        // 4. Setea el valor de Opacity en el shader combinado
+                        if (effect.Parameters["Opacity"] != null)
+                        {
+                            effect.Parameters["Opacity"].SetValue(opacity);
+                        }
+                        
                         effect.Parameters["ViewProjection"].SetValue(viewProjection);
                         effect.Parameters["World"].SetValue(world);
 
@@ -74,6 +109,10 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                     }
                     mesh.Draw();
                 }
+                
+                // 5. Restaurar el Blending después de dibujar la caja para no afectar otros objetos opacos.
+                _graphicsDevice.BlendState = BlendState.Opaque; 
+                
                 DebugDraw.DrawOBB(OBB, viewProjection, Color.Red);
             }
         }
@@ -105,6 +144,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 
         public void Update(PlayerShip player)
         {
+
             if (!_estaDestruido)
             {
                 //UpdateOrientedBoundingBoxWorld();

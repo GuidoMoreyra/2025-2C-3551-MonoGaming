@@ -10,7 +10,7 @@ namespace TGC.MonoGame.TP.Models
     {
         private Matrix _worldMatrix;
         private const float SCALE = 0.02f;
-        private const float VELOCIDAD = 58.5f;
+        private const float VELOCIDAD = 116f;
 
         public bool estaDestruido = false;
         private BoundingBox _boundingBoxLocal;
@@ -19,15 +19,16 @@ namespace TGC.MonoGame.TP.Models
 
         private Effect _effect;
 
+        private Matrix objWM;
         private SoundEffect sonidoDisparo;
         private SoundEffect sonidoColision;
 
         private double tiempoCreacion = 0;
 
-        public Proyectil(ContentManager content, Matrix worldMatrix, double tiempoCreacion)
+        public Proyectil(ContentManager content, Matrix worldMatrix, double tiempoCreacion, Matrix objWM)
         {
             _worldMatrix = worldMatrix;
-
+            this.objWM = objWM;
             _effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
             _effect.Parameters["DiffuseColor"]?.SetValue(Color.White.ToVector3());
 
@@ -130,7 +131,12 @@ namespace TGC.MonoGame.TP.Models
             }
             else
             {
-                var nuevoMovimiento = Vector3.Left * 4 * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                Vector3 targetPosition = objWM.Translation;
+                Vector3 projectilePosition = _worldMatrix.Translation; 
+                Vector3 direction = targetPosition - projectilePosition;
+                Vector3 versor = Vector3.Normalize(direction);
+                var nuevoMovimiento = versor * 4 * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 _worldMatrix = _worldMatrix * Matrix.CreateTranslation(nuevoMovimiento);
                 UpdateBoundingBoxWorld();
             }

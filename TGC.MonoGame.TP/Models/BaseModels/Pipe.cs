@@ -11,7 +11,7 @@ namespace TGC.MonoGame.TP.Models.BaseModels
         {
             _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Pipe/Pipe");
             var texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Pipe/Pipe_Texture");
-            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "MovingTexture");
+            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShaderTexture");
 
             foreach (var mesh in _model.Meshes)
             {

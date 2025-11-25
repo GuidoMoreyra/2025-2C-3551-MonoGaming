@@ -351,6 +351,7 @@ public class MonoGaming : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        
         float elapsedTime = (float)gameTime.TotalGameTime.TotalSeconds;
         //El fondo es negro
         GraphicsDevice.Clear(Color.Black);
@@ -375,6 +376,7 @@ public class MonoGaming : Game
             // Use the default blend and depth configuration
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.BlendState = BlendState.Opaque;
+            GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
 
             // Set the main render target, here we'll draw the base scene
             GraphicsDevice.SetRenderTarget(_mainSceneRenderTarget);
@@ -386,7 +388,7 @@ public class MonoGaming : Game
 
             player.Draw(viewProjection, CameraPosition, LightPosition, GraphicsDevice);
 
-            escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime);
+            escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime,GraphicsDevice);
             hud.Draw();
 
             #endregion

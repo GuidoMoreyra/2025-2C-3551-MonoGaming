@@ -13,7 +13,7 @@ internal class BoxModule_3 : IModule
 {
     private const float SCALE = 0.1f;
     private const TipoDeModulo TIPO = TipoDeModulo.Box3;
-
+    public List<DestroyableBox> obstaclesD{ get; set; }
     private readonly Model _model;
     private readonly List<Box> _obstacles;
     private readonly Matrix _scaleMatrix;
@@ -24,7 +24,7 @@ internal class BoxModule_3 : IModule
     public BoxModule_3()
     {
         IsOn = false;
-
+        
         _model = Pasillo.GetModel();
 
         _scaleMatrix = Matrix.CreateScale(SCALE);
@@ -49,7 +49,7 @@ internal class BoxModule_3 : IModule
         _obstacles[0].SetWorldMatrix(worldMatrix * _cajaTranslation);
     }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime)
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)
@@ -73,7 +73,7 @@ internal class BoxModule_3 : IModule
 
         foreach (Box box in _obstacles)
         {
-            box.Draw(viewProjection);
+            box.Draw(viewProjection,cameraPosition,_graphicsDevice);
         }
     }
 

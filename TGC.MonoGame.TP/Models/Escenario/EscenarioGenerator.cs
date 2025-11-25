@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models;
 using TGC.MonoGame.TP.Models.Escenario;
 using TGC.MonoGame.TP.Models.Modules;
@@ -11,7 +12,7 @@ namespace TGC.MonoGame.TP.Util;
 internal class EscenarioGenerator
 {
     private const int MAX_MODULES = 20;
-    private const int MAX_DISTINCT_MODULES = 5;
+    private const int MAX_DISTINCT_MODULES = 6;
 
     private readonly Random rng;
     private readonly Matrix inicio;
@@ -51,6 +52,8 @@ internal class EscenarioGenerator
         Stack<IModule> ship1Modules = new();
         stackModulos.Add(TipoDeModulo.Ship1, ship1Modules);
 
+        Stack<IModule> pipeModules = new();
+        stackModulos.Add(TipoDeModulo.Pipe, pipeModules);
 
         for (int i = 0; i < MAX_MODULES / 2; i++)
         {
@@ -59,6 +62,7 @@ internal class EscenarioGenerator
             box2Modules.Push(new BoxModule_2());
             box3Modules.Push(new BoxModule_3());
             ship1Modules.Push(new ShipModule_1());
+            pipeModules.Push(new PipeModule());
         }
 
         Matrix modulo2 = inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES);
@@ -102,8 +106,9 @@ internal class EscenarioGenerator
         }
     }
 
-    public void AvanzarEscenario()
+    public void AvanzarEscenario(PlayerShip player)
     {
+        modulos[0].IsOn = false;
         var posicionModulo = lastPosition % MAX_MODULES;
         var moduloARemover = modulos[posicionModulo];
         stackModulos.GetValueOrDefault(moduloARemover.GetTipoDeModulo()).Push(moduloARemover);
@@ -112,16 +117,25 @@ internal class EscenarioGenerator
         modulos[posicionModulo].SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * lastPosition));
 
         lastPosition++;
+        
+        modulos[0].IsOn = true;
     }
 
     public void Update(GameTime gameTime, PlayerShip player)
-    {
+    {   
+        if(modulos[0].GetTipoDeModulo() == TipoDeModulo.Pipe)
+        { 
+            player.objetivos = modulos[0].obstaclesD;
+        } else
+        {
+            player.objetivos = null;
+        }
         if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / DISTANCE_BETWEEN_MODULES))
         {
             // Se retrasa el avance del escenario para que no se vea como se deja de dibujar el modulo
             if (modulosRecorridos > 1)
             {
-                AvanzarEscenario();
+                AvanzarEscenario(player);
             }
             modulosRecorridos++;
         }
@@ -134,13 +148,16 @@ internal class EscenarioGenerator
         }
     }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime)
+public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
+{
+
+    for (int i = modulos.Length - 1; i >= 0; i--)
     {
-        foreach (var module in modulos)
-        {
-            module.Draw(viewProjection, cameraPosition, elapsedTime);
-        }
+        var module = modulos[i];
+        
+        module.Draw(viewProjection, cameraPosition, elapsedTime, _graphicsDevice);
     }
+}
 
     public void DrawBloom(Matrix viewProjection)
     {
