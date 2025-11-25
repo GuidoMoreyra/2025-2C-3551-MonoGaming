@@ -15,27 +15,26 @@ internal class Utils
 
     public static BoundingBox CalculateBoundingBox(Model model)
     {
-        BoundingBox mergedBox = new();
-        bool first = true;
+        Vector3 min = new(float.MaxValue);
+        Vector3 max = new(float.MinValue);
 
         foreach (var mesh in model.Meshes)
         {
-            Matrix meshTransform = mesh.ParentBone.Transform;
-
-            Vector3 min = mesh.BoundingSphere.Center - new Vector3(mesh.BoundingSphere.Radius);
-            Vector3 max = mesh.BoundingSphere.Center + new Vector3(mesh.BoundingSphere.Radius);
-            BoundingBox meshBox = new(min, max);
-
-            if (first)
+            var meshTransform = mesh.ParentBone.Transform;
+            foreach (var meshPart in mesh.MeshParts)
             {
-                mergedBox = meshBox;
-                first = false;
-            }
-            else
-            {
-                mergedBox = BoundingBox.CreateMerged(mergedBox, meshBox);
+                var vertexData = new VertexPositionNormalTexture[meshPart.NumVertices];
+                meshPart.VertexBuffer.GetData(vertexData);
+
+                foreach (var vertex in vertexData)
+                {
+                    var transformed = Vector3.Transform(vertex.Position, meshTransform);
+                    min = Vector3.Min(min, transformed);
+                    max = Vector3.Max(max, transformed);
+                }
             }
         }
-        return mergedBox;
+
+        return new BoundingBox(min, max);
     }
 }

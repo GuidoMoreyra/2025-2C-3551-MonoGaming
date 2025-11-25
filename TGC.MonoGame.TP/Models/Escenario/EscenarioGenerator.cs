@@ -77,6 +77,7 @@ internal class EscenarioGenerator
 
         lastPosition = 20;
         modulosRecorridos = 0;
+        modulos[0].IsOn = true;
     }
 
     private IModule GetRandomModule()
@@ -125,7 +126,7 @@ internal class EscenarioGenerator
             modulosRecorridos++;
         }
 
-        modulos[modulosRecorridos % MAX_MODULES].IsOn = true;
+        modulos[(modulosRecorridos + 1) % MAX_MODULES].IsOn = true;
 
         foreach (var module in modulos)
         {

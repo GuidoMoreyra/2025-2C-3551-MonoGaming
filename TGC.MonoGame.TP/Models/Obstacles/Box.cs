@@ -74,6 +74,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                     }
                     mesh.Draw();
                 }
+                DebugDraw.DrawOBB(OBB, viewProjection, Color.Red);
             }
         }
 
@@ -106,7 +107,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         {
             if (!_estaDestruido)
             {
-                UpdateOrientedBoundingBoxWorld();
+                //UpdateOrientedBoundingBoxWorld();
                 if (OBB.Intersects(player.BoundingBox) && !player.tieneEscudo) 
                 {
                     player.Destroy();

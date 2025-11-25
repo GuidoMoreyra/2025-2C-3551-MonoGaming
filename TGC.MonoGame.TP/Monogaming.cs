@@ -41,6 +41,7 @@ public class MonoGaming : Game
     private Vector3 LightPosition;
 
     private bool _wasPaused = false;
+    private bool _isFirstFrame = true;
     private GameState gameState = GameState.Menu;
 
     private SpriteBatch spriteBatch;
@@ -56,10 +57,16 @@ public class MonoGaming : Game
     private RenderTarget2D _mainSceneRenderTarget;
 
     private RenderTarget2D _secondPassBloomRenderTarget;
+    private RenderTarget2D _previousFrameRenderTarget;
+    private RenderTarget2D _currentFrameRenderTarget;
 
     private Effect _gaussianBlur;
 
     private Effect _bloomPost;
+
+    private Effect _motionBlur;
+
+    private Effect _basicShaderTexture;
 
     public MonoGaming()
     {
@@ -80,6 +87,8 @@ public class MonoGaming : Game
 
     protected override void Initialize()
     {
+        DebugDraw.GraphicsDevice = GraphicsDevice; //TODO Sacar cuando funcione bien las obb
+
         _viewportDimensions = new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -114,6 +123,12 @@ public class MonoGaming : Game
             GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.Depth24Stencil8, 0,
             RenderTargetUsage.DiscardContents);
         _secondPassBloomRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
+            RenderTargetUsage.DiscardContents);
+        _previousFrameRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
+            RenderTargetUsage.DiscardContents);
+        _currentFrameRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
             GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
             RenderTargetUsage.DiscardContents);
 
@@ -242,6 +257,12 @@ public class MonoGaming : Game
 
 
         _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
+        _motionBlur = Content.Load<Effect>(ContentFolderEffects + "MotionBlur");
+
+        _basicShaderTexture = Content.Load<Effect>(ContentFolderEffects + "BasicShaderTexture");
+
+        _basicShaderTexture.Parameters["ViewProjection"].SetValue(Matrix.Identity);
+        _basicShaderTexture.Parameters["World"].SetValue(Matrix.Identity);
 
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
 
@@ -284,6 +305,7 @@ public class MonoGaming : Game
             multiplicador = 1;
             vueltasAcumulador = 0;
             acumuladorIntermedioPuntos = 0;
+            _isFirstFrame = true;
             escenarioGenerator.GenerarEscenario();
         }
         else
@@ -392,13 +414,14 @@ public class MonoGaming : Game
 
             #endregion
 
-            #region Final
+            #region FinalBloom
 
             // Set the depth configuration as none, as we don't use depth in this pass
             GraphicsDevice.DepthStencilState = DepthStencilState.None;
+            GraphicsDevice.BlendState = BlendState.Opaque;
 
-            // Set the render target as null, we are drawing into the screen now!
-            GraphicsDevice.SetRenderTarget(null);
+            GraphicsDevice.SetRenderTarget(_currentFrameRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
 
             _bloomPost.Parameters["Texture"]?.SetValue(_mainSceneRenderTarget);
             _bloomPost.Parameters["bloomTexture"]?.SetValue(_secondPassBloomRenderTarget);
@@ -407,11 +430,38 @@ public class MonoGaming : Game
 
             #endregion
 
+            #region MotionBlur
+
+            // Set the depth configuration as none, as we don't use depth in this pass
+            GraphicsDevice.DepthStencilState = DepthStencilState.None;
+
+            // Set the render target as null, we are drawing into the screen now!
+            GraphicsDevice.SetRenderTarget(null);
+
+            _motionBlur.Parameters["CurrentFrame"]?.SetValue(_currentFrameRenderTarget);
+            if (_isFirstFrame)
+            {
+                _motionBlur.Parameters["PreviousFrame"]?.SetValue(_currentFrameRenderTarget);
+                _isFirstFrame = false;
+            }
+            else
+            {
+                _motionBlur.Parameters["PreviousFrame"]?.SetValue(_previousFrameRenderTarget);
+            }
+
+            Quad.Draw(_motionBlur, GraphicsDevice);
+
+            (_currentFrameRenderTarget, _previousFrameRenderTarget) = (_previousFrameRenderTarget, _currentFrameRenderTarget);
+
+            #endregion
+
             if (gameState == GameState.Paused)
             {
                 //TIENE QUE IR DESPUES DEL DRAW PRINICPAL
                 pauseMenu.Draw();
             }
+
+
         }
 
         //Cada modelo deberia tener su propio draw.
