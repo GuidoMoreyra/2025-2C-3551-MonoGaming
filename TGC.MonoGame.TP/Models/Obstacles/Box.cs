@@ -113,7 +113,7 @@ public void Draw(Matrix viewProjection, Vector3 playerPosition,GraphicsDevice _g
                 // 5. Restaurar el Blending después de dibujar la caja para no afectar otros objetos opacos.
                 _graphicsDevice.BlendState = BlendState.Opaque; 
                 
-                DebugDraw.DrawOBB(OBB, viewProjection, Color.Red);
+                //DebugDraw.DrawOBB(OBB, viewProjection, Color.Red);
             }
         }
 

@@ -9,7 +9,8 @@ namespace TGC.MonoGame.TP.Models.Escenario
         Box2,
         Box3,
         Ship1,
-        Pipe
+        Pipe,
+        Pipe2
 
     }
 

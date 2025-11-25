@@ -83,13 +83,13 @@ internal class BoxModule_1 : IModule
 
     public void Update(GameTime gameTime, PlayerShip player)
     {
-        //if (IsOn)
-        //{
+        if (IsOn)
+        {
             foreach (var obstacle in _obstacles)
                 obstacle.Update(player);
-        //}
+        }
     }
-
+    
     public void DrawBloom(Matrix viewProjection)
     {
         foreach (var mesh in _model.Meshes)

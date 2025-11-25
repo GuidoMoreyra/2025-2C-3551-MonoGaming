@@ -10,7 +10,7 @@ namespace TGC.MonoGame.TP.Models
     {
         private Matrix _worldMatrix;
         private const float SCALE = 0.02f;
-        private const float VELOCIDAD = 116f;
+        private const float VELOCIDAD = 1160f;
 
         public bool estaDestruido = false;
         private BoundingBox _boundingBoxLocal;

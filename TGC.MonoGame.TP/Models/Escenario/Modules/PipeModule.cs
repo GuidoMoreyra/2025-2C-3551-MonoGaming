@@ -72,6 +72,7 @@ internal class PipeModule : IModule
 
         GenerateObstacles(worldMatrix);
     }
+
     private void GenerateObstacles(Matrix worldMatrix)
     {
 
@@ -79,13 +80,40 @@ internal class PipeModule : IModule
     }
 
 
-    public  void DrawBloom(Matrix nose)
+    public  void DrawBloom(Matrix viewProjection)
     {
-        
+        foreach (var mesh in _model.Meshes)
+        {
+            var meshWorld = mesh.ParentBone.Transform;
+            var world = meshWorld * _worldMatrix;
+
+            foreach (var meshPart in mesh.MeshParts)
+            {
+                var effect = meshPart.Effect;
+                effect.CurrentTechnique = effect.Techniques["Bloom"];
+                effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                effect.Parameters["World"].SetValue(world);
+
+                foreach (var pass in effect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                }
+            }
+            mesh.Draw();
+        }
+        foreach (var ob in obstaclesD)
+        {
+                ob.DrawBloom(viewProjection);
+        }
     }
     public void Update(GameTime gameTime, PlayerShip player)
     {
-
+        if(IsOn){
+            foreach (var ob in obstaclesD)
+        {
+                ob.Update(gameTime, player);
+        }
+        }
     }
 
     public TipoDeModulo GetTipoDeModulo()

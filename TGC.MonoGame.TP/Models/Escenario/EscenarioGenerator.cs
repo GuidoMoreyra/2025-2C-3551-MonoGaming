@@ -12,7 +12,7 @@ namespace TGC.MonoGame.TP.Util;
 internal class EscenarioGenerator
 {
     private const int MAX_MODULES = 20;
-    private const int MAX_DISTINCT_MODULES = 6;
+    private const int MAX_DISTINCT_MODULES = 7;
 
     private readonly Random rng;
     private readonly Matrix inicio;
@@ -55,6 +55,10 @@ internal class EscenarioGenerator
         Stack<IModule> pipeModules = new();
         stackModulos.Add(TipoDeModulo.Pipe, pipeModules);
 
+        
+        Stack<IModule> pipe2Modules = new();
+        stackModulos.Add(TipoDeModulo.Pipe2, pipe2Modules);
+
         for (int i = 0; i < MAX_MODULES / 2; i++)
         {
             basicModules.Push(new BasicModule());
@@ -63,6 +67,7 @@ internal class EscenarioGenerator
             box3Modules.Push(new BoxModule_3());
             ship1Modules.Push(new ShipModule_1());
             pipeModules.Push(new PipeModule());
+            pipe2Modules.Push(new PipeModule_2());
         }
 
         Matrix modulo2 = inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES);
@@ -108,7 +113,6 @@ internal class EscenarioGenerator
 
     public void AvanzarEscenario(PlayerShip player)
     {
-        modulos[0].IsOn = false;
         var posicionModulo = lastPosition % MAX_MODULES;
         var moduloARemover = modulos[posicionModulo];
         stackModulos.GetValueOrDefault(moduloARemover.GetTipoDeModulo()).Push(moduloARemover);
@@ -117,19 +121,18 @@ internal class EscenarioGenerator
         modulos[posicionModulo].SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * lastPosition));
 
         lastPosition++;
-        
-        modulos[0].IsOn = true;
     }
 
     public void Update(GameTime gameTime, PlayerShip player)
     {   
-        if(modulos[0].GetTipoDeModulo() == TipoDeModulo.Pipe)
+        if(modulos[(modulosRecorridos) % MAX_MODULES].GetTipoDeModulo() == TipoDeModulo.Pipe)
         { 
-            player.objetivos = modulos[0].obstaclesD;
+            player.objetivos = modulos[(modulosRecorridos) % MAX_MODULES].obstaclesD;
         } else
         {
             player.objetivos = null;
         }
+
         if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / DISTANCE_BETWEEN_MODULES))
         {
             // Se retrasa el avance del escenario para que no se vea como se deja de dibujar el modulo

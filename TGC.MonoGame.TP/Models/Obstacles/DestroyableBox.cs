@@ -32,7 +32,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
 
 
 
-            _boundingBoxLocal = CalculateBoundingBox(_model);
+            _boundingBoxLocal = Utils.CalculateBoundingBox(_model);
 
             UpdateOrientedBoundingBoxWorld();
         }
@@ -101,7 +101,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             }
         }
 
-        public void DrawBloom(Matrix view, Matrix projection)
+        public void DrawBloom(Matrix viewProjection)
         {
             foreach (var mesh in _model.Meshes)
             {
@@ -113,8 +113,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
                 {
                     var effect = meshPart.Effect;
                     effect.CurrentTechnique = effect.Techniques["Bloom"];
-                    effect.Parameters["View"].SetValue(view);
-                    effect.Parameters["Projection"].SetValue(projection);
+                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
                     effect.Parameters["World"].SetValue(world);
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
@@ -138,7 +137,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         }
 
 
-        public void Update(GameTime gameTime, PlayerShip player, EscenarioGenerator generator)
+        public void Update(GameTime gameTime, PlayerShip player)
         {
 
             UpdateOrientedBoundingBoxWorld(); 
