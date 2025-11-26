@@ -11,7 +11,7 @@ namespace TGC.MonoGame.TP.Util;
 
 internal class EscenarioGenerator
 {
-    private const int MAX_MODULES = 20;
+    private const int MAX_MODULES = 10;
     private const int MAX_DISTINCT_MODULES = 7;
 
     private readonly Random rng;
@@ -84,7 +84,7 @@ internal class EscenarioGenerator
             modulos[i].SetWorldMatrix(inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES * i));
         }
 
-        lastPosition = 20;
+        lastPosition = MAX_MODULES;
         modulosRecorridos = 0;
         modulos[0].IsOn = true;
     }
@@ -154,9 +154,10 @@ internal class EscenarioGenerator
 public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
 {
 
-    for (int i = modulos.Length - 1; i >= 0; i--)
+    for (int i = 1; i <= MAX_MODULES; i++)
     {
-        var module = modulos[i];
+        var indiceModulo = (lastPosition - i) % MAX_MODULES;
+        var module = modulos[indiceModulo];
         
         module.Draw(viewProjection, cameraPosition, elapsedTime, _graphicsDevice);
     }
