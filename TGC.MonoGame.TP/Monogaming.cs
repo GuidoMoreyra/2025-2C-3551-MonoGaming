@@ -9,6 +9,7 @@ using TGC.MonoGame.TP.Models.BaseModels;
 using TGC.MonoGame.TP.Models.UserInterface;
 using TGC.MonoGame.TP.Models.Escenario;
 using TGC.MonoGame.TP.Models.Player;
+using TGC.MonoGame.TP.Models.Extras;
 
 namespace TGC.MonoGame.TP;
 
@@ -258,6 +259,8 @@ public class MonoGaming : Game
 
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
 
+        ParticleSystem.InitializeParticleSystem(new QuadMesh(GraphicsDevice, Content.Load<Effect>(ContentFolderEffects + "BasicShader")));
+
         // check the current state of the MediaPlayer.
         if (MediaPlayer.State != MediaState.Stopped)
         {
@@ -327,6 +330,8 @@ public class MonoGaming : Game
 
                 escenarioGenerator.Update(gameTime, player);
 
+                ParticleSystem.GetParticleSystem().Update(gameTime);
+
                 base.Update(gameTime);
             }
             else
@@ -378,6 +383,14 @@ public class MonoGaming : Game
             escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime, GraphicsDevice);
 
             player.DrawEscudo(viewProjection, gameTime);
+
+            GraphicsDevice.BlendState = BlendState.AlphaBlend;
+            GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+
+            ParticleSystem.GetParticleSystem().Draw(viewProjection, CameraPosition);
+
+            GraphicsDevice.BlendState = BlendState.Opaque;
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
             hud.Draw();
 

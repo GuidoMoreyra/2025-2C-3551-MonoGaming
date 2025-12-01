@@ -4,6 +4,7 @@ using TGC.MonoGame.TP.Util;
 using TGC.MonoGame.TP.Models.BaseModels;
 using TGC.MonoGame.TP.Models.Player;
 using System;
+using TGC.MonoGame.TP.Models.Extras;
 
 namespace TGC.MonoGame.TP.Models.Obstacles
 {
@@ -139,6 +140,7 @@ namespace TGC.MonoGame.TP.Models.Obstacles
         public void Destroy()
         {
             estaDestruido = true;
+            ParticleSystem.GetParticleSystem().Emit(OBB.Center, 20);
         }
 
         public void Update(PlayerShip player)

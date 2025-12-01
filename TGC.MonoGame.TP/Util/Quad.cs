@@ -5,7 +5,7 @@ namespace TGC.MonoGame.TP.Util
 {
     internal class Quad
     {
-        private static VertexPositionTexture[] vertices =
+        private static readonly VertexPositionTexture[] vertices =
         [
     // Posiciones Normalizadas 
     new VertexPositionTexture(new Vector3(-1, 1, 0), new Vector2(0, 0)),
@@ -14,7 +14,7 @@ namespace TGC.MonoGame.TP.Util
     new VertexPositionTexture(new Vector3(1, -1, 0), new Vector2(1, 1))
         ];
 
-        private static short[] indices = { 0, 1, 2, 2, 1, 3 };
+        private static readonly short[] indices = [0, 1, 2, 2, 1, 3];
 
         public static VertexPositionTexture[] GetVertices()
         {
