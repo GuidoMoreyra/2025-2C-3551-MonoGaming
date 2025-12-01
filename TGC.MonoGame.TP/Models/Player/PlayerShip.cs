@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using TGC.MonoGame.TP.Models.Obstacles;
 using Microsoft.Xna.Framework.Audio;
@@ -8,125 +7,93 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Modules;
+using TGC.MonoGame.TP.Util;
 
 
-namespace TGC.MonoGame.TP.Models
+namespace TGC.MonoGame.TP.Models.Player
 {
     internal class PlayerShip
     {
-        private bool toogleGodModeActive = true;
-        private bool _godMode = false;
-        private Matrix _worldMatrix;
-        public Vector3 Position { get; set; }
-        private Model _model;
-
-        private Escudo escudo;
-
-        private int cantidad_de_balas = 10;
-        public List<Proyectil> proyectiles = new List<Proyectil>();
-
-        public List<DestroyableBox> objetivos = null;
-
-        private DestroyableBox obj = null;
-        private float tiempoAcumuladoEscudo = 0f;
-        private float tiempoAcumuladoBalas = 0f;
-        private const float VELOCIDAD = 28.25F;
-        private const float VELOCIDAD_DE_GIRO = 180F;
+        private const float VELOCIDAD = 28.25f;
+        private const float VELOCIDAD_DE_GIRO = 180f;
         private const float TIME_BETWEEN_SHOTS = 0.5f;
         private const float SCALE = 0.01f;
         private const float ALTURA_MIN = -5f;
         private const float ALTURA_MAX = 10f;
         private const float DURACION_ESCUDO = 3f;
-        public Boolean tieneEscudo = true;
         private const float DISTANCIA_MIN = -15f;
         private const float DISTANCIA_MAX = 15f;
+        private const float ROTACION_INICIAL = -90.0f;
 
-        private bool estaDestruido = false;
+        private readonly Model _model;
+        private readonly Escudo _escudo;
+        public readonly Proyectil _proyectil;
+        private readonly SoundEffect _sonidoColision;
+        private readonly Matrix _scaleMatrix;
+        public Vector3 Position { get; set; }
+        private bool _toogleGodModeActive;
+        private bool _godMode;
+        private Matrix _worldMatrix;
+        public List<DestroyableBox> _objetivos;
+        private float _tiempoAcumuladoEscudo;
+        private float _tiempoAcumuladoProyectil;
+        public bool _tieneEscudo;
+        private bool _estaDestruido;
+        private float _distanciaRecorrida;
+        private float _angulo;
+        private BoundingBox _boundingBoxLocal;
+        private OrientedBoundingBox _obbWorld;
+        public OrientedBoundingBox BoundingBox => _obbWorld;
 
-        private float distanciaRecorrida = 0.0f;
 
-
-        private float angulo = 0;
-
-        private BoundingBox _boundingBox;
-        private BoundingBox _worldBoundingBox;
-
-        public BoundingBox BoundingBox => _worldBoundingBox;
-
-        private SoundEffect sonidoColision;
-
-
-        public PlayerShip(ContentManager content)
+        public PlayerShip(ContentManager content, GraphicsDevice graphicsDevice)
         {
-
-            escudo = new Escudo(content, _worldMatrix);
+            _tiempoAcumuladoEscudo = 0.0f;
+            _tiempoAcumuladoProyectil = 0.0f;
+            _tieneEscudo = true;
+            _estaDestruido = false;
+            _distanciaRecorrida = 0.0f;
+            _angulo = 0.0f;
+            _proyectil = new Proyectil(content);
+            _godMode = false;
+            _toogleGodModeActive = true;
+            _escudo = new Escudo(graphicsDevice);
             Position = Vector3.Zero;
-            sonidoColision = content.Load<SoundEffect>(MonoGaming.ContentFolderSounds + "ExplosionJugador");
+            _sonidoColision = content.Load<SoundEffect>(MonoGaming.ContentFolderSounds + "ExplosionJugador");
+            _scaleMatrix = Matrix.CreateScale(SCALE);
 
             //Recupero el modelo con las texturas
             _model = Nave_1.GetModel();
 
             //Creo la matriz de mundo inicial
-            var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(-90));
-            _worldMatrix = rotation * Matrix.Identity;
+            var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(ROTACION_INICIAL));
+            _worldMatrix = rotation * _scaleMatrix;
 
             //Creo al bounding box
-            _boundingBox = CalculateBoundingBox(_model);
-            UpdateBoundingBoxWorld();
+            _boundingBoxLocal = Utils.CalculateBoundingBox(_model);
+            UpdateOrientedBoundingBoxWorld();
         }
 
-        private BoundingBox CalculateBoundingBox(Model model)
+        private void UpdateOrientedBoundingBoxWorld()
         {
-            Vector3 min = new Vector3(float.MaxValue);
-            Vector3 max = new Vector3(float.MinValue);
+            // 1. Calcular el centro y las medias extensiones (HalfExtents) de la AABB local
+            Vector3 localCenter = (_boundingBoxLocal.Min + _boundingBoxLocal.Max) / 2.0f;
+            Vector3 localHalfExtents = (_boundingBoxLocal.Max - _boundingBoxLocal.Min) / 2.0f;
 
-            foreach (var mesh in model.Meshes)
-            {
-                var transforms = mesh.ParentBone.Transform;
-                foreach (var part in mesh.MeshParts)
-                {
-                    var vertexData = new VertexPositionNormalTexture[part.NumVertices];
-                    part.VertexBuffer.GetData(vertexData);
-
-                    foreach (var vertex in vertexData)
-                    {
-                        var transformed = Vector3.Transform(vertex.Position, transforms);
-                        min = Vector3.Min(min, transformed);
-                        max = Vector3.Max(max, transformed);
-                    }
-                }
-            }
-
-            return new BoundingBox(min, max);
-        }
-
-        private void UpdateBoundingBoxWorld()
-        {
-            var scaleMatrix = Matrix.CreateScale(SCALE);
-            var worldTransform = scaleMatrix * _worldMatrix;
-
-            var corners = _boundingBox.GetCorners();
-            var transformedCorners = new Vector3[corners.Length];
-            for (int i = 0; i < corners.Length; i++)
-                transformedCorners[i] = Vector3.Transform(corners[i], worldTransform);
-
-            // Reducir bounding box a un porcentaje del tamaño original
-            Vector3 center = (BoundingBox.Min + BoundingBox.Max) / 2f;
-            for (int i = 0; i < transformedCorners.Length; i++)
-                transformedCorners[i] = center + (transformedCorners[i] - center) * 0.6f; // 60% del tamaño
-
-            _worldBoundingBox = BoundingBox.CreateFromPoints(transformedCorners);
+            // 3. Crear la OBB usando el constructor
+            _obbWorld = new OrientedBoundingBox(
+                localCenter,
+                localHalfExtents,
+                _worldMatrix // Matriz de Escala, Rotación y Traslación.
+            );
         }
 
         public void Draw(Matrix viewProjection, Vector3 CameraPosition, Vector3 LightPosition, GraphicsDevice graphicsDevice)
         {
             foreach (var mesh in _model.Meshes)
             {
-                var rotacionJugador = Matrix.CreateRotationZ(MathHelper.ToRadians(angulo));
                 var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * rotacionJugador * scaleMatrix * _worldMatrix;
+                var world = meshWorld * _worldMatrix;
 
                 foreach (var meshPart in mesh.MeshParts)
                 {
@@ -145,23 +112,15 @@ namespace TGC.MonoGame.TP.Models
                 }
                 mesh.Draw();
             }
-
-            foreach (var proyectil in proyectiles)
-            {
-                proyectil.Draw(viewProjection);
-            }
-            if (tieneEscudo == true)
-                escudo.Draw(viewProjection, _worldMatrix, graphicsDevice);
+            _proyectil.Draw(viewProjection);
         }
 
         public void DrawBloom(Matrix viewProjection)
         {
             foreach (var mesh in _model.Meshes)
             {
-                var rotacionJugador = Matrix.CreateRotationZ(MathHelper.ToRadians(angulo));
                 var meshWorld = mesh.ParentBone.Transform;
-                var scaleMatrix = Matrix.CreateScale(SCALE);
-                var world = meshWorld * rotacionJugador * scaleMatrix * _worldMatrix;
+                var world = meshWorld * _worldMatrix;
 
                 foreach (var meshPart in mesh.MeshParts)
                 {
@@ -169,7 +128,6 @@ namespace TGC.MonoGame.TP.Models
                     effect.CurrentTechnique = effect.Techniques["Bloom"];
                     effect.Parameters["ViewProjection"].SetValue(viewProjection);
                     effect.Parameters["World"].SetValue(world);
-                    effect.Parameters["InverseTransposeWorld"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
 
                     foreach (var pass in effect.CurrentTechnique.Passes)
                     {
@@ -180,128 +138,152 @@ namespace TGC.MonoGame.TP.Models
             }
         }
 
-        public void SetWorldMatrix(Matrix newWorld)
-        {
-            _worldMatrix = newWorld;
-            UpdateBoundingBoxWorld();
-        }
-
-
-        public void UpdateCamera(GameTime gameTime, ref Matrix view, ref Matrix projection)
+        public void UpdateCamera(ref Matrix view)
         {
             Vector3 cameraOffset = Vector3.Right * 60 + Vector3.Up * 7f;
 
-            Vector3 targetPosition = (BoundingBox.Min + BoundingBox.Max) / 2f;
+            Vector3 targetPosition = BoundingBox.Center;
             Vector3 cameraPosition = targetPosition + cameraOffset;
 
             cameraPosition.Y = MathHelper.Clamp(cameraPosition.Y, ALTURA_MIN, ALTURA_MAX);
 
-            Vector3 upVector = Vector3.Up;
-            view = Matrix.CreateLookAt(cameraPosition, targetPosition, upVector);
-            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, 16f / 9f, 0.1f, 1000f);
+            view = Matrix.CreateLookAt(cameraPosition, targetPosition, Vector3.Up);
         }
 
-        public void Update(GameTime gameTime, ref Matrix view, ref Matrix projection, ContentManager content)
+        public void Update(GameTime gameTime, ref Matrix view)
         {
             KeyboardState keyboardState = Keyboard.GetState();
-            Vector3 nuevoMovimiento = Vector3.Zero;
 
-            nuevoMovimiento += Vector3.Left * 4 * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            Vector3 nuevoMovimiento = Vector3.Left * 4 * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            distanciaRecorrida += nuevoMovimiento.X;
-            Matrix objWorldMatrix;
-            proyectiles.RemoveAll(o => o.estaDestruido);
-            if(objetivos != null){ Console.WriteLine("Objetivo encontrado");obj = objetivos[0]; objWorldMatrix = objetivos[0]._worldMatrix;}
-            else{objWorldMatrix  = Matrix.Identity;}
-            tiempoAcumuladoBalas += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            tiempoAcumuladoEscudo += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (cantidad_de_balas > 0 && tiempoAcumuladoBalas >= TIME_BETWEEN_SHOTS && obj != null)
+            _distanciaRecorrida += nuevoMovimiento.X;
+
+            Matrix objetivoWorldMatrix;
+            if (_objetivos != null)
             {
-                if (keyboardState.IsKeyDown(Keys.Space))
+                Console.WriteLine("Objetivo encontrado");
+                objetivoWorldMatrix = Matrix.CreateTranslation(_objetivos[0].OBB.Center);
+            }
+            else
+            {
+                objetivoWorldMatrix = Matrix.Identity;
+            }
+
+            if (_proyectil.EstaDestruido())
+            {
+                _tiempoAcumuladoProyectil += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                if (_tiempoAcumuladoProyectil > TIME_BETWEEN_SHOTS && _objetivos != null)
                 {
-                    objetivos = null;
-                    cantidad_de_balas--;
-                    tiempoAcumuladoBalas = 0f;
-                    proyectiles.Add(new Proyectil(content, _worldMatrix, gameTime.TotalGameTime.TotalSeconds, objWorldMatrix));
+                    if (keyboardState.IsKeyDown(Keys.Space))
+                    {
+                        _objetivos = null;
+                        _tiempoAcumuladoProyectil = 0.0f;
+                        _proyectil.SetWorldMatrix(_worldMatrix.Translation, objetivoWorldMatrix, gameTime);
+                    }
                 }
+            }
 
-            }
-            if (keyboardState.IsKeyDown(Keys.E) && tieneEscudo == false)
+            if (_tieneEscudo)
             {
-                this.tieneEscudo = true;
-                tiempoAcumuladoEscudo = 0f;
+                _tiempoAcumuladoEscudo += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+            else if (keyboardState.IsKeyDown(Keys.E))
+            {
+                SetEscudo();
+            }
+            if (_tiempoAcumuladoEscudo >= DURACION_ESCUDO)
+            {
+                _tieneEscudo = false;
+            }
 
-            }
-            if (tiempoAcumuladoEscudo >= DURACION_ESCUDO)
-            {
-                this.tieneEscudo = false;
-            }
 
             if (keyboardState.IsKeyDown(Keys.Left))
-                angulo -= VELOCIDAD_DE_GIRO * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                _angulo += VELOCIDAD_DE_GIRO * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.Right))
-                angulo += VELOCIDAD_DE_GIRO * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                _angulo -= VELOCIDAD_DE_GIRO * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (keyboardState.IsKeyDown(Keys.A))
-                nuevoMovimiento += Vector3.Backward * 2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Backward * 2f * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.W))
-                nuevoMovimiento += Vector3.Up *  2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Up * 2f * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.S))
-                nuevoMovimiento += Vector3.Down *  2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Down * 2f * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (keyboardState.IsKeyDown(Keys.D))
-                nuevoMovimiento += Vector3.Forward *  2f  * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                nuevoMovimiento += Vector3.Forward * 2f * VELOCIDAD * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (keyboardState.IsKeyDown(Keys.G) && !toogleGodModeActive)
+            if (keyboardState.IsKeyDown(Keys.G) && !_toogleGodModeActive)
             {
                 _godMode = !_godMode;
             }
-            toogleGodModeActive = keyboardState.IsKeyDown(Keys.G);
+            _toogleGodModeActive = keyboardState.IsKeyDown(Keys.G);
 
-            var traslacion = Matrix.CreateTranslation(nuevoMovimiento);
-            _worldMatrix = _worldMatrix * traslacion;
 
-            Vector3 pos = _worldMatrix.Translation;
-            pos.Y = MathHelper.Clamp(pos.Y, ALTURA_MIN, ALTURA_MAX);
-            pos.Z = MathHelper.Clamp(pos.Z, DISTANCIA_MIN, DISTANCIA_MAX);
 
-            Position = pos;
-            _worldMatrix.Translation = pos;
+            Position += nuevoMovimiento;
+            Position = new Vector3(Position.X, MathHelper.Clamp(Position.Y, ALTURA_MIN, ALTURA_MAX), MathHelper.Clamp(Position.Z, DISTANCIA_MIN, DISTANCIA_MAX));
 
-            foreach (Proyectil proyectil in proyectiles)
+            _worldMatrix =
+                _scaleMatrix *
+                Matrix.CreateRotationY(MathHelper.ToRadians(ROTACION_INICIAL)) *
+                Matrix.CreateRotationX(MathHelper.ToRadians(_angulo)) *
+                Matrix.CreateTranslation(Position);
+
+            _proyectil.Update(gameTime);
+            UpdateOrientedBoundingBoxWorld();
+
+            UpdateCamera(ref view);
+        }
+
+        public void DrawEscudo(Matrix viewProjection, GameTime gameTime)
+        {
+            if (_tieneEscudo)
             {
-                proyectil.Update(gameTime);
+                _escudo.Draw(viewProjection, Matrix.CreateTranslation(_worldMatrix.Translation), gameTime);
             }
-            UpdateBoundingBoxWorld();
-            UpdateCamera(gameTime, ref view, ref projection);
         }
 
         public void Destroy()
         {
             if (!_godMode)
             {
-                sonidoColision.Play();
-                estaDestruido = true;
+                _sonidoColision.Play();
+                _estaDestruido = true;
             }
         }
 
         public bool EstaDestruido()
         {
-            return estaDestruido;
+            return _estaDestruido;
         }
 
         public float GetDistanciaRecorrida()
         {
-            return distanciaRecorrida;
+            return _distanciaRecorrida;
+        }
+
+        public void SetEscudo()
+        {
+            _tieneEscudo = true;
+            _tiempoAcumuladoEscudo = 0.0f;
         }
 
         public void Restart()
         {
+            _tiempoAcumuladoEscudo = 0.0f;
+            _tiempoAcumuladoProyectil = 0.0f;
+            _tieneEscudo = true;
+            _estaDestruido = false;
+            _distanciaRecorrida = 0.0f;
+            _angulo = 0.0f;
+            _godMode = false;
+            _toogleGodModeActive = true;
             Position = Vector3.Zero;
-            distanciaRecorrida = 0.0f;
-            estaDestruido = false;
-            cantidad_de_balas = 10;
-            var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(-90));
-            _worldMatrix = rotation * Matrix.Identity;
+            _distanciaRecorrida = 0.0f;
+            _estaDestruido = false;
+            _tieneEscudo = true;
+            var rotation = Matrix.CreateRotationY(MathHelper.ToRadians(ROTACION_INICIAL));
+            _worldMatrix = rotation * _scaleMatrix;
         }
     }
 }

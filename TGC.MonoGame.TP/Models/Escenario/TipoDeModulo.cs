@@ -10,8 +10,7 @@ namespace TGC.MonoGame.TP.Models.Escenario
         Box3,
         Ship1,
         Pipe,
-        Pipe2
-
+        Destroyable
     }
 
 }

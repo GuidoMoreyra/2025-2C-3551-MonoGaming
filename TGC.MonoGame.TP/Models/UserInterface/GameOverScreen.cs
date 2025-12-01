@@ -5,10 +5,12 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using TGC.MonoGame.TP.Util;
 
-namespace TGC.MonoGame.TP.Models
+namespace TGC.MonoGame.TP.Models.UserInterface
 {
     internal class GameOverScreen
     {
+        private const float OPACITY = 0.3f;
+
         private readonly Effect _effect;
         private readonly SpriteFont _font;
         private readonly List<RectangleButton> _pauseButtons;
@@ -28,7 +30,7 @@ namespace TGC.MonoGame.TP.Models
             _effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
             _effect.Parameters["ViewProjection"].SetValue(Matrix.Identity);
             _effect.Parameters["World"].SetValue(Matrix.Identity);
-            _effect.Parameters["DiffuseColor"].SetValue(new Vector4(0, 0, 0, 0.3f));
+            _effect.Parameters["DiffuseColor"].SetValue(new Vector4(Color.Black.ToVector3(), OPACITY));
 
             // Inicializa la lista de botones
             _pauseButtons = buttons;

@@ -1,61 +1,52 @@
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using TGC.MonoGame.TP.Models.BaseModels;
 
-namespace TGC.MonoGame.TP.Models.Modules
+namespace TGC.MonoGame.TP.Models.Player
 {
     internal class Escudo
     {
-        private Matrix _worldMatrix;
-        private Model _model;
-        private float scale = 5f;
+        private const float SCALE = 5.0f;
+        private const float OPACITY = 0.3f;
+        private const float SPEED = 0.2f;
 
-        public float Alpha { get; set; } = 0.3f; // inicializado en blanco, opaco
+        private readonly Model _model;
+        private readonly Matrix _scaleMatrix;
+        private readonly GraphicsDevice _graphicsDevice;
 
-        public Escudo(ContentManager content, Matrix worldMatrix)
+        public Escudo(GraphicsDevice graphicsDevice)
         {
-            _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Esfera/Esfera");
-            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "BasicShader").Clone();
+            _scaleMatrix = Matrix.CreateScale(SCALE);
 
-            // Clonar el shader para cada meshPart
-            foreach (var mesh in _model.Meshes)
-            {
-                foreach (var meshPart in mesh.MeshParts)
-                {
-                    meshPart.Effect = effect;
-                }
-            }
+            _model = BaseModelEscudo.GetModel();
 
-            _worldMatrix = worldMatrix;
+            _graphicsDevice = graphicsDevice;
         }
 
-       public void Draw(Matrix viewProjection, Matrix mundo, GraphicsDevice graphicsDevice)
+        public void Draw(Matrix viewProjection, Matrix mundo, GameTime gameTime)
         {
-        graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        graphicsDevice.DepthStencilState = new DepthStencilState()
-        {
-            DepthBufferEnable = true,
-            DepthBufferWriteEnable = false
-        };
+            _graphicsDevice.BlendState = BlendState.NonPremultiplied;
+            _graphicsDevice.DepthStencilState = DepthStencilState.None;
 
             foreach (var mesh in _model.Meshes)
             {
                 foreach (var meshPart in mesh.MeshParts)
                 {
                     var effect = meshPart.Effect;
-                    effect.Parameters["World"].SetValue(Matrix.CreateScale(scale) * mundo);
+                    effect.Parameters["World"].SetValue(_scaleMatrix * mundo);
                     effect.Parameters["ViewProjection"].SetValue(viewProjection);
-                    effect.Parameters["DiffuseColor"]?.SetValue(new Vector4(Color.White.ToVector3(), Alpha));
+                    effect.Parameters["Opacity"]?.SetValue(OPACITY);
+
+                    effect.Parameters["Time"]?.SetValue((float)gameTime.TotalGameTime.TotalSeconds);
+                    effect.Parameters["Speed"]?.SetValue(SPEED);
                 }
                 mesh.Draw();
             }
 
             // Restaurar estados para no afectar otros objetos
-            graphicsDevice.BlendState = BlendState.Opaque;
-            graphicsDevice.DepthStencilState = DepthStencilState.Default;
+            _graphicsDevice.BlendState = BlendState.Opaque;
+            _graphicsDevice.DepthStencilState = DepthStencilState.Default;
         }
-
-
     }
 }

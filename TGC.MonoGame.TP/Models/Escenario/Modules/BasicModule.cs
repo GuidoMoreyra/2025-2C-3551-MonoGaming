@@ -1,18 +1,15 @@
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Escenario;
-using TGC.MonoGame.TP.Models.Obstacles;
-using TGC.MonoGame.TP.Models.Modules.Contract;
+using TGC.MonoGame.TP.Models.Escenario.Contract;
+using TGC.MonoGame.TP.Models.Player;
 
-namespace TGC.MonoGame.TP.Models.Modules;
+namespace TGC.MonoGame.TP.Models.Escenario.Modules;
 
 internal class BasicModule : IModule
 {
     private const float SCALE = 0.1f;
     private const TipoDeModulo TIPO = TipoDeModulo.Basic;
-    public List<DestroyableBox> obstaclesD{ get; set; }
     private readonly Model _model;
     private readonly Matrix _scaleMatrix;
     public bool IsOn { get; set; }
@@ -34,7 +31,7 @@ internal class BasicModule : IModule
     }
 
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)

@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using TGC.MonoGame.TP.Models;
-using TGC.MonoGame.TP.Models.Escenario;
-using TGC.MonoGame.TP.Models.Modules;
-using TGC.MonoGame.TP.Models.Modules.Contract;
+using TGC.MonoGame.TP.Models.Escenario.Contract;
+using TGC.MonoGame.TP.Models.Escenario.Modules;
+using TGC.MonoGame.TP.Models.Player;
 
-namespace TGC.MonoGame.TP.Util;
+namespace TGC.MonoGame.TP.Models.Escenario;
 
 internal class EscenarioGenerator
 {
@@ -55,9 +54,8 @@ internal class EscenarioGenerator
         Stack<IModule> pipeModules = new();
         stackModulos.Add(TipoDeModulo.Pipe, pipeModules);
 
-        
-        Stack<IModule> pipe2Modules = new();
-        stackModulos.Add(TipoDeModulo.Pipe2, pipe2Modules);
+        Stack<IModule> destroyableModules = new();
+        stackModulos.Add(TipoDeModulo.Destroyable, destroyableModules);
 
         for (int i = 0; i < MAX_MODULES / 2; i++)
         {
@@ -67,7 +65,7 @@ internal class EscenarioGenerator
             box3Modules.Push(new BoxModule_3());
             ship1Modules.Push(new ShipModule_1());
             pipeModules.Push(new PipeModule());
-            pipe2Modules.Push(new PipeModule_2());
+            destroyableModules.Push(new DestroyableModule());
         }
 
         Matrix modulo2 = inicio * Matrix.CreateTranslation(Vector3.Left * DISTANCE_BETWEEN_MODULES);
@@ -92,7 +90,7 @@ internal class EscenarioGenerator
     private IModule GetRandomModule()
     {
         int indiceModulo = rng.Next(MAX_DISTINCT_MODULES);
-        return GetModule(indiceModulo);        
+        return GetModule(indiceModulo);
     }
 
     //Devuelve el modulo del tipo indicado o de algun tipo siguiente si esta vacia la pila
@@ -111,7 +109,7 @@ internal class EscenarioGenerator
         }
     }
 
-    public void AvanzarEscenario(PlayerShip player)
+    public void AvanzarEscenario()
     {
         var posicionModulo = lastPosition % MAX_MODULES;
         var moduloARemover = modulos[posicionModulo];
@@ -124,13 +122,22 @@ internal class EscenarioGenerator
     }
 
     public void Update(GameTime gameTime, PlayerShip player)
-    {   
-        if(modulos[(modulosRecorridos) % MAX_MODULES].GetTipoDeModulo() == TipoDeModulo.Pipe)
-        { 
-            player.objetivos = modulos[(modulosRecorridos) % MAX_MODULES].obstaclesD;
-        } else
+    {
+        if (modulos[(modulosRecorridos + 2) % MAX_MODULES].GetTipoDeModulo() == TipoDeModulo.Destroyable)
         {
-            player.objetivos = null;
+            player._objetivos = ((DestroyableModule)modulos[(modulosRecorridos + 2) % MAX_MODULES]).Obstacles;
+        }
+        else if (modulos[(modulosRecorridos + 1) % MAX_MODULES].GetTipoDeModulo() == TipoDeModulo.Destroyable)
+        {
+            player._objetivos = ((DestroyableModule)modulos[(modulosRecorridos + 1) % MAX_MODULES]).Obstacles;
+        }
+        else if (modulos[modulosRecorridos % MAX_MODULES].GetTipoDeModulo() == TipoDeModulo.Destroyable)
+        {
+            player._objetivos = ((DestroyableModule)modulos[modulosRecorridos % MAX_MODULES]).Obstacles;
+        }
+        else
+        {
+            player._objetivos = null;
         }
 
         if (modulosRecorridos < Math.Floor(Math.Abs(player.GetDistanciaRecorrida()) / DISTANCE_BETWEEN_MODULES))
@@ -138,7 +145,7 @@ internal class EscenarioGenerator
             // Se retrasa el avance del escenario para que no se vea como se deja de dibujar el modulo
             if (modulosRecorridos > 1)
             {
-                AvanzarEscenario(player);
+                AvanzarEscenario();
             }
             modulosRecorridos++;
         }
@@ -151,17 +158,17 @@ internal class EscenarioGenerator
         }
     }
 
-public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
-{
-
-    for (int i = 1; i <= MAX_MODULES; i++)
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
     {
-        var indiceModulo = (lastPosition - i) % MAX_MODULES;
-        var module = modulos[indiceModulo];
-        
-        module.Draw(viewProjection, cameraPosition, elapsedTime, _graphicsDevice);
+
+        for (int i = 1; i <= MAX_MODULES; i++)
+        {
+            var indiceModulo = (lastPosition - i) % MAX_MODULES;
+            var module = modulos[indiceModulo];
+
+            module.Draw(viewProjection, cameraPosition, elapsedTime, _graphicsDevice);
+        }
     }
-}
 
     public void DrawBloom(Matrix viewProjection)
     {

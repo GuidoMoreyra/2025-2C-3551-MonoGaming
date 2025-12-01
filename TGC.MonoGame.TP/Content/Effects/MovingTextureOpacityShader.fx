@@ -12,13 +12,14 @@ float4x4 ViewProjection;
 
 float Opacity; 
 
+// Tiempo y velocidad para animar la textura
+float Time = 0;
+float Speed = 0.5;
+
 uniform Texture2D Texture; 
 sampler s = sampler_state
 {
     Texture = <Texture>;
-    MinFilter = Linear;
-    MagFilter = Linear;
-    MipFilter = Linear;
     AddressU = Wrap;
     AddressV = Wrap;
 };
@@ -32,7 +33,7 @@ struct VertexShaderInput
 struct VertexShaderOutput
 {
     float4 Position : SV_POSITION;
-    float2 TexCoord : TEXCOORD1;
+    float2 TexCoord : TEXCOORD0;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -43,7 +44,9 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     
     output.Position = mul(worldPosition, ViewProjection);
 
-    output.TexCoord = input.TexCoord;
+    // Desplaza la textura según el tiempo y la velocidad
+    float2 offset = float2(0.0f, Time * Speed);
+    output.TexCoord = input.TexCoord + offset;
 
     return output;
 }

@@ -2,10 +2,11 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace TGC.MonoGame.TP.Models
+namespace TGC.MonoGame.TP.Models.UserInterface
 {
     internal class HUD
     {
+        private const float OFFSET_MULTIPLICADOR = 5.0f;
         private readonly SpriteFont _font;
         private readonly SpriteBatch _spriteBatch;
         private readonly Vector2 _puntosPosition;
@@ -21,7 +22,7 @@ namespace TGC.MonoGame.TP.Models
 
             Vector2 puntosSize = _font.MeasureString("Puntos: ");
             _puntosPosition = Vector2.Zero;
-            _multplicadorPosition = new Vector2(0, puntosSize.Y + 5);
+            _multplicadorPosition = new Vector2(0.0f, puntosSize.Y + OFFSET_MULTIPLICADOR);
 
             _spriteBatch = spriteBatch;
         }

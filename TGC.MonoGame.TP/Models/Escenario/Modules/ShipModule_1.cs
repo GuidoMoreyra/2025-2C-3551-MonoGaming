@@ -2,18 +2,23 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Escenario;
-using TGC.MonoGame.TP.Models.Modules.Contract;
+using TGC.MonoGame.TP.Models.Escenario.Contract;
 using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.Player;
 
 
-namespace TGC.MonoGame.TP.Models.Modules;
+namespace TGC.MonoGame.TP.Models.Escenario.Modules;
 
 internal class ShipModule_1 : IModule
 {
     private const float SCALE = 0.1f;
+    private const float SHIP2_TRANSLATION_Z = 15.0f;
+    private const float SHIP2_TRANSLATION_Y = 10.0f;
+    private const float CARGOSHIP_ROTATION = 60.0f;
+    private const float CARGOSHIP_TRANSLATION_Z = 10.0f;
+    private const float CARGOSHIP_TRANSLATION_Y = 10.0f;
+
     private const TipoDeModulo TIPO = TipoDeModulo.Ship1;
-    public List<DestroyableBox> obstaclesD{ get; set; }
     private readonly Model _model;
     private readonly List<Ship> _dinamicObstacles;
     private readonly CargoShip _staticObstacle;
@@ -31,8 +36,8 @@ internal class ShipModule_1 : IModule
 
         _rotationScaleMatrix = Matrix.CreateScale(SCALE);
 
-        _ship2Matrix = Matrix.CreateTranslation(Vector3.Forward * 15f + Vector3.Up * 10f);
-        _cargoShipMatrix = Matrix.CreateRotationX(MathHelper.ToDegrees(60)) * Matrix.CreateTranslation(Vector3.Backward * 10f + Vector3.Up * 10f);
+        _ship2Matrix = Matrix.CreateTranslation(Vector3.Forward * SHIP2_TRANSLATION_Z + Vector3.Up * SHIP2_TRANSLATION_Y);
+        _cargoShipMatrix = Matrix.CreateRotationX(MathHelper.ToDegrees(CARGOSHIP_ROTATION)) * Matrix.CreateTranslation(Vector3.Backward * CARGOSHIP_TRANSLATION_Z + Vector3.Up * CARGOSHIP_TRANSLATION_Y);
 
         _dinamicObstacles = [];
         _dinamicObstacles.Add(new Ship());
@@ -58,7 +63,7 @@ internal class ShipModule_1 : IModule
         _staticObstacle.SetWorldMatrix(_cargoShipMatrix * worldMatrix);
     }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)
@@ -96,12 +101,6 @@ internal class ShipModule_1 : IModule
                 ship.Update(gameTime, player);
             }
             _staticObstacle.Update(player);
-        }else
-        {
-            foreach (var ship in _dinamicObstacles)
-            {
-                ship.Reset();
-            }
         }
     }
 

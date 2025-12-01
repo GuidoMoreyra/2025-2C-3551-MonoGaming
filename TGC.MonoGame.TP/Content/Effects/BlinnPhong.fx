@@ -104,6 +104,20 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     return output;
 }
 
+VertexShaderOutput BloomVS(in VertexShaderInput input)
+{
+    // Clear the output
+	VertexShaderOutput output = (VertexShaderOutput)0;
+    // Model space to World space
+    output.WorldPosition = mul(input.Position, World);
+	// world space to Projection space
+    output.Position = mul(output.WorldPosition, ViewProjection);
+
+    output.TexCoord = input.TexCoord;
+
+    return output;
+}
+
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
     // Base vectors
@@ -154,7 +168,7 @@ technique Bloom
 {
 	pass P0
 	{
-		VertexShader = compile VS_SHADERMODEL MainVS();
+		VertexShader = compile VS_SHADERMODEL BloomVS();
 		PixelShader = compile PS_SHADERMODEL BloomPS();
 	}
 };

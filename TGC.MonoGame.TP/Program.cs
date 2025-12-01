@@ -7,8 +7,8 @@ namespace TGC.MonoGame.TP
         [STAThread]
         static void Main()
         {
-            using (var game = new MonoGaming())
-                game.Run();
+            using var game = new MonoGaming();
+            game.Run();
         }
     }
 }

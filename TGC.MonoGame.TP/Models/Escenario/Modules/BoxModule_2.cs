@@ -2,18 +2,22 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Escenario;
-using TGC.MonoGame.TP.Models.Modules.Contract;
+using TGC.MonoGame.TP.Models.Escenario.Contract;
 using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.Player;
 
 
-namespace TGC.MonoGame.TP.Models.Modules;
+namespace TGC.MonoGame.TP.Models.Escenario.Modules;
 
 internal class BoxModule_2 : IModule
 {
     private const float SCALE = 0.1f;
+    private const float BOX_TRANSLATION_Y = 2.0f;
+    private const float BOX_ANGLE = 0.0f;
+    private const float BOX_SCALE_Y = 0.2f;
+    private const float BOX_SCALE_Z = 0.5f;
     private const TipoDeModulo TIPO = TipoDeModulo.Box2;
-    public List<DestroyableBox> obstaclesD{ get; set; }
+
     private readonly Model _model;
     private readonly List<Box> _obstacles;
     private readonly Matrix _scaleMatrix;
@@ -29,10 +33,10 @@ internal class BoxModule_2 : IModule
 
         _scaleMatrix = Matrix.CreateScale(SCALE);
 
-        _cajaTranslation = Matrix.CreateTranslation(Vector3.Up * 13f + Vector3.Down * 15f);
+        _cajaTranslation = Matrix.CreateTranslation(Vector3.Down * BOX_TRANSLATION_Y);
 
         _obstacles = [];
-        _obstacles.Add(new Box(0, 0.2f, 0.5f));
+        _obstacles.Add(new Box(BOX_ANGLE, BOX_SCALE_Y, BOX_SCALE_Z));
     }
 
     public void SetWorldMatrix(Matrix worldMatrix)
@@ -49,7 +53,7 @@ internal class BoxModule_2 : IModule
         _obstacles[0].SetWorldMatrix(worldMatrix * _cajaTranslation);
     }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)
@@ -79,11 +83,13 @@ internal class BoxModule_2 : IModule
 
     public void Update(GameTime gameTime, PlayerShip player)
     {
-        // if (IsOn)
-        // {
+        if (IsOn)
+        {
             foreach (var obstacle in _obstacles)
+            {
                 obstacle.Update(player);
-        // }
+            }
+        }
     }
 
     public void DrawBloom(Matrix viewProjection)

@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using TGC.MonoGame.TP.Models.BaseModels;
 
-namespace TGC.MonoGame.TP.Models
+namespace TGC.MonoGame.TP.Models.UserInterface
 {
 
     internal class Menu

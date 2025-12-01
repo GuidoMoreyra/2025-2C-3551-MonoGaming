@@ -2,18 +2,23 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Escenario;
-using TGC.MonoGame.TP.Models.Modules.Contract;
+using TGC.MonoGame.TP.Models.Escenario.Contract;
 using TGC.MonoGame.TP.Models.Obstacles;
+using TGC.MonoGame.TP.Models.Player;
 
 
-namespace TGC.MonoGame.TP.Models.Modules;
+namespace TGC.MonoGame.TP.Models.Escenario.Modules;
 
 internal class BoxModule_1 : IModule
 {
     private const float SCALE = 0.1f;
+    private const float BOX_TRANSLATION_Z = 16.0f;
+    private const float BOX_TRANSLATION_Y = 15.0f;
+    private const float BOX_ANGLE = 0.0f;
+    private const float BOX_SCALE_Y = 0.3f;
+    private const float BOX_SCALE_Z = 0.25f;
     private const TipoDeModulo TIPO = TipoDeModulo.Box1;
-    public List<DestroyableBox> obstaclesD{ get; set; }
+
     private readonly Model _model;
     private readonly List<Box> _obstacles;
     private readonly Matrix _scaleMatrix;
@@ -30,12 +35,12 @@ internal class BoxModule_1 : IModule
 
         _scaleMatrix = Matrix.CreateScale(SCALE);
 
-        _caja1Translation = Matrix.CreateTranslation(Vector3.Backward * 16f + Vector3.Down * 15f);
-        _caja2Translation = Matrix.CreateTranslation(Vector3.Forward * 16f + Vector3.Down * 15f);
+        _caja1Translation = Matrix.CreateTranslation(Vector3.Backward * BOX_TRANSLATION_Z + Vector3.Down * BOX_TRANSLATION_Y);
+        _caja2Translation = Matrix.CreateTranslation(Vector3.Forward * BOX_TRANSLATION_Z + Vector3.Down * BOX_TRANSLATION_Y);
 
         _obstacles = [];
-        _obstacles.Add(new Box(0, 0.3f, 0.25f));
-        _obstacles.Add(new Box(0, 0.3f, 0.25f));
+        _obstacles.Add(new Box(BOX_ANGLE, BOX_SCALE_Y, BOX_SCALE_Z));
+        _obstacles.Add(new Box(BOX_ANGLE, BOX_SCALE_Y, BOX_SCALE_Z));
     }
 
     public void SetWorldMatrix(Matrix worldMatrix)
@@ -53,7 +58,7 @@ internal class BoxModule_1 : IModule
         _obstacles[1].SetWorldMatrix(worldMatrix * _caja2Translation);
     }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
     {
         // Para dibujar le modelo necesitamos pasarle informacion que el efecto esta esperando.
         foreach (var mesh in _model.Meshes)
@@ -74,10 +79,9 @@ internal class BoxModule_1 : IModule
             }
             mesh.Draw();
         }
-
         foreach (Box box in _obstacles)
         {
-            box.Draw(viewProjection,cameraPosition,_graphicsDevice);
+            box.Draw(viewProjection, cameraPosition, _graphicsDevice);
         }
     }
 
@@ -86,10 +90,12 @@ internal class BoxModule_1 : IModule
         if (IsOn)
         {
             foreach (var obstacle in _obstacles)
+            {
                 obstacle.Update(player);
+            }
         }
     }
-    
+
     public void DrawBloom(Matrix viewProjection)
     {
         foreach (var mesh in _model.Meshes)

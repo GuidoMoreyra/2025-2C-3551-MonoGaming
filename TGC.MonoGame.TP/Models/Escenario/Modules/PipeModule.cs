@@ -1,43 +1,39 @@
-
-using System;
-using System.Collections.Generic;
-using TGC.MonoGame.TP.Models.Modules.Contract;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Models.BaseModels;
-using TGC.MonoGame.TP.Models.Escenario;
-using TGC.MonoGame.TP.Models.Obstacles;
-using TGC.MonoGame.TP.Util;
+using TGC.MonoGame.TP.Models.Escenario.Contract;
+using TGC.MonoGame.TP.Models.Player;
 
-namespace TGC.MonoGame.TP.Models.Modules;
+namespace TGC.MonoGame.TP.Models.Escenario.Modules;
 
 internal class PipeModule : IModule
 {
-    private  Matrix _worldMatrix;
-    public bool IsOn { get; set; }
+    private const TipoDeModulo tipo = TipoDeModulo.Pipe;
+    private const float MODEL_ROTATION = -90f;
+    private const float SCALE = 0.2f;
+    private const float SPEED = 0.1f;
+
+    private readonly Matrix _rotationScaleMatrix;
     private readonly Model _model;
-
-    private Matrix worldMatrix2 = Matrix.CreateTranslation(Vector3.Forward * 7f);
-    private Matrix worldMatrix3 = Matrix.CreateTranslation(Vector3.Backward * 7f);
-
-    public List<DestroyableBox> obstaclesD{ get; set; }
-    public Boolean isOn { get; set; }
-    private readonly TipoDeModulo tipo = TipoDeModulo.Pipe;
-    private float scale = 0.1f;
-
+    private readonly Vector2 _textureSpeed;
+    public bool IsOn { get; set; }
+    private Matrix _worldMatrix;
 
     public PipeModule()
     {
-        _model =  Pasillo.GetModel();
+        _model = Pipe.GetModel();
 
-        obstaclesD = new List<DestroyableBox>{new DestroyableBox()};
+        _textureSpeed = new Vector2(SPEED, SPEED);
 
-
+        _rotationScaleMatrix = Matrix.CreateRotationY(MathHelper.ToRadians(MODEL_ROTATION)) * Matrix.CreateScale(SCALE);
     }
 
+    public void SetWorldMatrix(Matrix worldMatrix)
+    {
+        _worldMatrix = _rotationScaleMatrix * worldMatrix;
+    }
 
-    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice )
+    public void Draw(Matrix viewProjection, Vector3 cameraPosition, float elapsedTime, GraphicsDevice _graphicsDevice)
     {
         foreach (var mesh in _model.Meshes)
         {
@@ -47,40 +43,19 @@ internal class PipeModule : IModule
             foreach (var meshPart in mesh.MeshParts)
             {
                 var effect = meshPart.Effect;
-                effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
-                effect.Parameters["ViewProjection"].SetValue(viewProjection);
-                effect.Parameters["World"].SetValue(world);
 
-                foreach (var pass in effect.CurrentTechnique.Passes)
-                {
-                    pass.Apply();
-                }
+                effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
+                effect.Parameters["World"].SetValue(world);
+                effect.Parameters["ViewProjection"].SetValue(viewProjection);
+
+                effect.Parameters["Time"]?.SetValue(elapsedTime);
+                effect.Parameters["Speed"]?.SetValue(_textureSpeed);
             }
             mesh.Draw();
         }
-        foreach (var ob in obstaclesD)
-        {
-                ob.Draw(viewProjection,cameraPosition);
-        }
     }
 
-    public void SetWorldMatrix(Matrix worldMatrix)
-    {
-        IsOn = false;
-        var _scaleMatrix = Matrix.CreateScale(scale);
-        _worldMatrix = _scaleMatrix * worldMatrix;
-
-        GenerateObstacles(worldMatrix);
-    }
-
-    private void GenerateObstacles(Matrix worldMatrix)
-    {
-
-        obstaclesD[0].SetWorldMatrix(worldMatrix);
-    }
-
-
-    public  void DrawBloom(Matrix viewProjection)
+    public void DrawBloom(Matrix viewProjection)
     {
         foreach (var mesh in _model.Meshes)
         {
@@ -91,29 +66,16 @@ internal class PipeModule : IModule
             {
                 var effect = meshPart.Effect;
                 effect.CurrentTechnique = effect.Techniques["Bloom"];
-                effect.Parameters["ViewProjection"].SetValue(viewProjection);
                 effect.Parameters["World"].SetValue(world);
+                effect.Parameters["ViewProjection"].SetValue(viewProjection);
 
-                foreach (var pass in effect.CurrentTechnique.Passes)
-                {
-                    pass.Apply();
-                }
             }
             mesh.Draw();
         }
-        foreach (var ob in obstaclesD)
-        {
-                ob.DrawBloom(viewProjection);
-        }
     }
+
     public void Update(GameTime gameTime, PlayerShip player)
     {
-        if(IsOn){
-            foreach (var ob in obstaclesD)
-        {
-                ob.Update(gameTime, player);
-        }
-        }
     }
 
     public TipoDeModulo GetTipoDeModulo()
@@ -121,7 +83,4 @@ internal class PipeModule : IModule
         return tipo;
     }
 
-    public void DrawBloom(Matrix view, Matrix projection)
-    {
-    }
 }

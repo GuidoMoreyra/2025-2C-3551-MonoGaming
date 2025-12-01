@@ -1,134 +1,139 @@
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using TGC.MonoGame.TP.Models.Modules;
-using TGC.MonoGame.TP.Util; // -> Aquí debe estar definida la estructura OrientedBoundingBox
-using System;
+using TGC.MonoGame.TP.Util;
 using TGC.MonoGame.TP.Models.BaseModels;
+using TGC.MonoGame.TP.Models.Player;
+using System;
 
 namespace TGC.MonoGame.TP.Models.Obstacles
 {
     internal class DestroyableBox
     {
+        public const float SCALE = 0.1f;
+        private const float SCALE_X = 0.03f;
+        // Definiciones de distancia para la opacidad
+        private const float MAX_DISTANCE = 50.0f; // Completamente opaco a partir de esta distancia
+        private const float MIN_DISTANCE = 20.0f;  // Completamente transparente (o casi) a esta distancia
+
+        private readonly Matrix _scaleMatrix;
         public Matrix _worldMatrix;
         private Model _model;
-
-        private readonly Matrix _scaleMatrix = Matrix.CreateScale(0.1f) ;
-
-
-
-        public bool estaDestruido = false;
-
+        public bool estaDestruido;
         private BoundingBox _boundingBoxLocal;
-        
         private OrientedBoundingBox _obbWorld;
-        public OrientedBoundingBox OBB => _obbWorld; 
+        public OrientedBoundingBox OBB => _obbWorld;
 
 
         public DestroyableBox()
         {
-            _model = Caja_1.GetModel();
+            _model = Caja_2.GetModel();
 
+            _scaleMatrix = Matrix.CreateScale(SCALE);
 
+            estaDestruido = false;
 
             _boundingBoxLocal = Utils.CalculateBoundingBox(_model);
+        }
+
+        public void SetWorldMatrix(Matrix newWorld)
+        {
+            _worldMatrix = _scaleMatrix * newWorld;
+
+            estaDestruido = false;
 
             UpdateOrientedBoundingBoxWorld();
         }
 
-
-        private BoundingBox CalculateBoundingBox(Model model)
-        {
-            BoundingBox mergedBox = new BoundingBox();
-            bool first = true;
-
-            foreach (var mesh in model.Meshes)
-            {
-                Vector3 min = mesh.BoundingSphere.Center - new Vector3(mesh.BoundingSphere.Radius);
-                Vector3 max = mesh.BoundingSphere.Center + new Vector3(mesh.BoundingSphere.Radius);
-                BoundingBox meshBox = new BoundingBox(min, max);
-
-                if (first)
-                {
-                    mergedBox = meshBox;
-                    first = false;
-                }
-                else
-                {
-                    mergedBox = BoundingBox.CreateMerged(mergedBox, meshBox);
-                }
-            }
-            return mergedBox;
-        }
-
-
         private void UpdateOrientedBoundingBoxWorld()
         {
-
             Vector3 localCenter = (_boundingBoxLocal.Min + _boundingBoxLocal.Max) / 2.0f;
             Vector3 localHalfExtents = (_boundingBoxLocal.Max - _boundingBoxLocal.Min) / 2.0f;
 
-            Matrix worldTransform = _scaleMatrix * _worldMatrix;
-
             _obbWorld = new OrientedBoundingBox(
-                localCenter, 
-                localHalfExtents, 
-                worldTransform
+                localCenter,
+                localHalfExtents,
+                _worldMatrix
             );
         }
 
-        public void Draw(Matrix viewProjection, Vector3 cameraPosition)
+        public void Draw(Matrix viewProjection, Vector3 cameraPosition, GraphicsDevice _graphicsDevice)
         {
-            foreach (var mesh in _model.Meshes)
+            if (!estaDestruido)
             {
-                var meshWorld = mesh.ParentBone.Transform;
+                // 2. Cálculo de la Opacidad
+                Vector3 modelPosition = _worldMatrix.Translation;
+                float distance = Vector3.Distance(cameraPosition, modelPosition);
 
-                var world = meshWorld * _scaleMatrix * _worldMatrix; 
-                foreach (var meshPart in mesh.MeshParts)
+                float opacity = 1.0f;
+
+                if (distance < MAX_DISTANCE)
                 {
-                    var effect = meshPart.Effect;
-                    effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
-                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
-                    effect.Parameters["World"].SetValue(world);
-
-                    foreach (var pass in effect.CurrentTechnique.Passes)
-                    {
-                        pass.Apply();
-                    }
+                    // Mapear la distancia de [MIN_DISTANCE, MAX_DISTANCE] a [0, 1]
+                    // El valor 't' es 1.0 cuando está lejos y 0.0 cuando está cerca.
+                    opacity = MathHelper.Clamp((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0f, 1.0f);
                 }
-                mesh.Draw();
+
+                if (opacity < 1.0f)
+                {
+                    _graphicsDevice.BlendState = BlendState.AlphaBlend;
+                }
+                else
+                {
+                    _graphicsDevice.BlendState = BlendState.Opaque;
+                }
+
+                foreach (var mesh in _model.Meshes)
+                {
+                    var meshWorld = mesh.ParentBone.Transform;
+                    var world = meshWorld * _worldMatrix;
+
+                    foreach (var meshPart in mesh.MeshParts)
+                    {
+                        var effect = meshPart.Effect;
+                        effect.CurrentTechnique = effect.Techniques["BasicColorDrawing"];
+
+                        effect.Parameters["Opacity"]?.SetValue(opacity);
+
+                        effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                        effect.Parameters["World"].SetValue(world);
+
+                        foreach (var pass in effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                        }
+                    }
+                    mesh.Draw();
+                }
+
+                // 5. Restaurar el Blending después de dibujar la caja para no afectar otros objetos opacos.
+                _graphicsDevice.BlendState = BlendState.Opaque;
             }
         }
 
         public void DrawBloom(Matrix viewProjection)
         {
-            foreach (var mesh in _model.Meshes)
+            if (!estaDestruido)
             {
-                var meshWorld = mesh.ParentBone.Transform;
-                var world = meshWorld * _scaleMatrix * _worldMatrix;
-
-                // ... (DrawBloom logic) ...
-                foreach (var meshPart in mesh.MeshParts)
+                foreach (var mesh in _model.Meshes)
                 {
-                    var effect = meshPart.Effect;
-                    effect.CurrentTechnique = effect.Techniques["Bloom"];
-                    effect.Parameters["ViewProjection"].SetValue(viewProjection);
-                    effect.Parameters["World"].SetValue(world);
+                    var meshWorld = mesh.ParentBone.Transform;
+                    var world = meshWorld * _worldMatrix;
 
-                    foreach (var pass in effect.CurrentTechnique.Passes)
+                    foreach (var meshPart in mesh.MeshParts)
                     {
-                        pass.Apply();
-                    }
-                }
-                mesh.Draw();
-            }
-        }
+                        var effect = meshPart.Effect;
+                        effect.CurrentTechnique = effect.Techniques["Bloom"];
+                        effect.Parameters["ViewProjection"].SetValue(viewProjection);
+                        effect.Parameters["World"].SetValue(world);
 
-        public void SetWorldMatrix(Matrix newWorld)
-        {
-            _worldMatrix = newWorld;
-            UpdateOrientedBoundingBoxWorld(); 
+                        foreach (var pass in effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                        }
+                    }
+                    mesh.Draw();
+                }
+            }
         }
 
         public void Destroy()
@@ -136,26 +141,19 @@ namespace TGC.MonoGame.TP.Models.Obstacles
             estaDestruido = true;
         }
 
-
-        public void Update(GameTime gameTime, PlayerShip player)
+        public void Update(PlayerShip player)
         {
-
-            UpdateOrientedBoundingBoxWorld(); 
-
-  
-            if (OBB.Intersects(player.BoundingBox) && !player.tieneEscudo)
+            if (!estaDestruido)
             {
-                player.Destroy();
-                Console.WriteLine("Colisión CargoShip vs Player");
-            }
-            
-            foreach (var proyectil in player.proyectiles)
-            {
-
-                if (OBB.Intersects(proyectil.BoundingBox)) 
+                if (OBB.Intersects(player._proyectil.BoundingBox))
                 {
-                    this.Destroy();
-                    proyectil.Destroy(true);
+                    Destroy();
+                    player._proyectil.Destroy(true);
+                    player.SetEscudo();
+                }
+                else if (OBB.Intersects(player.BoundingBox) && !player._tieneEscudo)
+                {
+                    player.Destroy();
                 }
             }
         }

@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using TGC.MonoGame.TP.Util;
 
-namespace TGC.MonoGame.TP.Models
+namespace TGC.MonoGame.TP.Models.Escenario
 {
     internal class Background
     {

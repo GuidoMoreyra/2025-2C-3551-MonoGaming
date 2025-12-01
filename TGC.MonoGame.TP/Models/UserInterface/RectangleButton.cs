@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace TGC.MonoGame.TP.Models
+namespace TGC.MonoGame.TP.Models.UserInterface
 {
     internal class RectangleButton
     {
@@ -13,15 +13,16 @@ namespace TGC.MonoGame.TP.Models
         private readonly SpriteFont _font;
         private readonly Texture2D _texture;
         private readonly SpriteBatch _spriteBatch;
-        public Action OnClick;
+        private readonly Action _onClick;
 
-        public RectangleButton(ContentManager content, string text, Rectangle rectangle, SpriteBatch spriteBatch)
+        public RectangleButton(ContentManager content, string text, Rectangle rectangle, SpriteBatch spriteBatch, Action onClick)
         {
             _texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Buttons/RectangleButton");
             _font = content.Load<SpriteFont>(MonoGaming.ContentFolderSpriteFonts + "GameFont");
             _text = text;
             _rectangle = rectangle;
             _spriteBatch = spriteBatch;
+            _onClick = onClick;
         }
 
         public void Update(MouseState previousMouse, MouseState currentMouse)
@@ -32,7 +33,7 @@ namespace TGC.MonoGame.TP.Models
                     previousMouse.LeftButton == ButtonState.Released)
                 {
                     // Si hay una acción asignada, la ejecutamos
-                    OnClick?.Invoke();
+                    _onClick?.Invoke();
                 }
             }
         }

@@ -4,15 +4,15 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace TGC.MonoGame.TP.Models.BaseModels
 {
-    internal class Caja_1
+    internal class Caja_2
     {
         private static Model _model = null;
 
         public static void InitializeModel(ContentManager content)
         {
-            _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Caja_1/Caja_1");
+            _model = content.Load<Model>(MonoGaming.ContentFolder3D + "Caja_2/Caja_2");
 
-            var texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Caja_1/Caja1_AlbedoTransparency");
+            var texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Caja_2/Caja2_Diana");
 
             var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "TextureOpacityShader");
 
