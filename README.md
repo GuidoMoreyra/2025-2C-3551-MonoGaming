@@ -17,18 +17,17 @@ E - Activar escudo (Manualmente, tambien se activa al romper un obstáculo)
 
 ## Integrantes
 
-TGC, Tgcito  |  Apellido, Nombre
+Rabahia, Maron  |  Moreyra, Guido
 ------------ | -------------
-| <img src="https://github.com/tgc-utn/tgc-utn.github.io/blob/main/images/robotgc.png" height="500"> | <img src="https://github.com/tgc-utn/tgc-utn.github.io/blob/main/images/trofeotp.png" height="500"> |
+| <img src="https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Maron_Rabahia.jpg" height="500"> | <img src="https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Guido_Moreyra.png" height="500"> |
 
 ## Capturas
 
-![screenshot1](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot2](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot3](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot4](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot5](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
+![Menu Principal](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_1.jpg)
+![Captura Gameplay 1](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_2.jpg)
+![Captura Gameplay 2](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_3.jpg)
+![Captura fin de partida](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_4.jpg)
 
 ## Game Play
 
-[![Watch the video](https://img.youtube.com/vi/pgEwUC0jvH4/0.jpg)](https://www.youtube.com/playlist?list=PLRM4L32DjvnazuMl8wZlbpEYL5Qh63ulG)
+[![Video gameplay](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Gameplay_video.mp4)](https://www.youtube.com/playlist?list=PLRM4L32DjvnazuMl8wZlbpEYL5Qh63ulG)
