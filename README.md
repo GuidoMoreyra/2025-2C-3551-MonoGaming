@@ -19,15 +19,15 @@ E - Activar escudo (Manualmente, tambien se activa al romper un obstáculo)
 
 Rabahia, Maron  |  Moreyra, Guido
 ------------ | -------------
-| <img src="https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Maron_Rabahia.jpg" height="500"> | <img src="https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Guido_Moreyra.png" height="500"> |
+| <img src="https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Maron_Rabahia.jpg" height="500"> | <img src="https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Guido_Moreyra.png" height="500"> |
 
 ## Capturas
 
-![Menu Principal](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_1.jpg)
-![Captura Gameplay 1](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_2.jpg)
-![Captura Gameplay 2](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_3.jpg)
-![Captura fin de partida](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_4.jpg)
+![Menu Principal](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_1.jpg)
+![Captura Gameplay 1](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_2.jpg)
+![Captura Gameplay 2](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_3.jpg)
+![Captura fin de partida](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_4.jpg)
 
 ## Game Play
 
-[![Video gameplay](https://https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Gameplay_video.mp4)](https://www.youtube.com/playlist?list=PLRM4L32DjvnazuMl8wZlbpEYL5Qh63ulG)
+![Video gameplay](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Gameplay_video.mp4)
