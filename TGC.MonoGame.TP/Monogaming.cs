@@ -2,11 +2,14 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using TGC.MonoGame.TP.Models;
 using TGC.MonoGame.TP.Util;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using TGC.MonoGame.TP.Models.BaseModels;
+using TGC.MonoGame.TP.Models.UserInterface;
+using TGC.MonoGame.TP.Models.Escenario;
+using TGC.MonoGame.TP.Models.Player;
+using TGC.MonoGame.TP.Models.Extras;
 
 namespace TGC.MonoGame.TP;
 
@@ -31,17 +34,18 @@ public class MonoGaming : Game
 
     private EscenarioGenerator escenarioGenerator;
 
-    private int puntos = 0;
-    private int multiplicador = 1;
-    private double acumuladorIntermedioPuntos = 0;
-    private int vueltasAcumulador = 0;
+    private int puntos;
+    private int multiplicador;
+    private double acumuladorIntermedioPuntos;
+    private int vueltasAcumulador;
     private PlayerShip player;
 
     private Vector3 CameraPosition;
     private Vector3 LightPosition;
 
-    private bool _wasPaused = false;
-    private GameState gameState = GameState.Menu;
+    private bool _wasPaused;
+    private bool _isFirstFrame;
+    private GameState gameState;
 
     private SpriteBatch spriteBatch;
     private Background background;
@@ -56,10 +60,16 @@ public class MonoGaming : Game
     private RenderTarget2D _mainSceneRenderTarget;
 
     private RenderTarget2D _secondPassBloomRenderTarget;
+    private RenderTarget2D _previousFrameRenderTarget;
+    private RenderTarget2D _currentFrameRenderTarget;
 
     private Effect _gaussianBlur;
 
     private Effect _bloomPost;
+
+    private Effect _motionBlur;
+
+    private Effect _basicShaderTexture;
 
     public MonoGaming()
     {
@@ -80,6 +90,15 @@ public class MonoGaming : Game
 
     protected override void Initialize()
     {
+        puntos = 0;
+        multiplicador = 1;
+        acumuladorIntermedioPuntos = 0;
+        vueltasAcumulador = 0;
+
+        _wasPaused = false;
+        _isFirstFrame = true;
+        gameState = GameState.Menu;
+
         _viewportDimensions = new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -89,18 +108,20 @@ public class MonoGaming : Game
 
         //Cargo los modelos
         Caja_1.InitializeModel(Content);
+        Caja_2.InitializeModel(Content);
         Nave_1.InitializeModel(Content);
         Nave_2.InitializeModel(Content);
         Pasillo_Asteroide.InitializeModel(Content);
         Pasillo.InitializeModel(Content);
         Pipe.InitializeModel(Content);
+        BaseModelEscudo.InitializeModel(Content, GraphicsDevice);
 
         //Inicializo el generador de escenarios (TIENE QUE SER DESPUES DE INICIALIZAR LOS MODELOS)
         escenarioGenerator = new EscenarioGenerator();
         escenarioGenerator.GenerarEscenario();
 
         background = new Background(Content, GraphicsDevice);
-        player = new PlayerShip(Content);
+        player = new PlayerShip(Content, GraphicsDevice);
         hud = new HUD(Content, spriteBatch);
         pauseMenu = GeneratePauseMenu();
         mainMenu = GenerateMenu();
@@ -116,11 +137,16 @@ public class MonoGaming : Game
         _secondPassBloomRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
             GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
             RenderTargetUsage.DiscardContents);
+        _previousFrameRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
+            RenderTargetUsage.DiscardContents);
+        _currentFrameRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width,
+            GraphicsDevice.Viewport.Height, false, SurfaceFormat.Color, DepthFormat.None, 0,
+            RenderTargetUsage.DiscardContents);
 
         // Configuramos nuestras matrices de la escena.
         _view = Matrix.CreateLookAt(new Vector3(0, 0, 300), Vector3.Zero, Vector3.Up);
-        _projection =
-            Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1, 2500);
+        _projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f);
 
         base.Initialize();
     }
@@ -135,14 +161,12 @@ public class MonoGaming : Game
             Content,
             "Reanudar",
             new Rectangle(MathHelper.Max(0, ((int)(_viewportDimensions.X / 2)) - 400 - (384 / 2)), (int)_viewportDimensions.Y / 2, 384, 128), // Posición X, Y, Ancho, Alto
-            spriteBatch)
-        {
-            // Asignar la acción que debe ejecutar (usando una función lambda)
-            OnClick = () =>
+            spriteBatch,
+            () =>
                 {
                     gameState = GameState.Playing; // Cambia el estado del juego
                 }
-        };
+            );
 
         pauseButtons.Add(resumeButton);
 
@@ -151,13 +175,9 @@ public class MonoGaming : Game
             Content,
             "Salir del juego",
             new Rectangle(MathHelper.Min((int)_viewportDimensions.X, ((int)(_viewportDimensions.X / 2)) + 400), (int)_viewportDimensions.Y / 2, 384, 128),
-            spriteBatch)
-        {
-            OnClick = () =>
-            {
-                Exit(); // Cierra el juego
-            }
-        };
+            spriteBatch,
+            Exit
+        );
 
         pauseButtons.Add(quitButton);
 
@@ -173,25 +193,20 @@ public class MonoGaming : Game
             Content,
             "Salir del juego",
             new Rectangle(MathHelper.Min((int)_viewportDimensions.X, ((int)(_viewportDimensions.X / 2)) + 400), (int)_viewportDimensions.Y / 2, 384, 128),
-            spriteBatch)
-        {
-            OnClick = () =>
-            {
-                Exit(); // Cierra el juego
-            }
-        };
+            spriteBatch,
+            Exit
+        );
 
         RectangleButton playButton = new(
             Content,
             "Jugar",
             new Rectangle(MathHelper.Max(0, ((int)(_viewportDimensions.X / 2)) - 400 - (384 / 2)), (int)_viewportDimensions.Y / 2, 384, 128),
-            spriteBatch)
-        {
-            OnClick = () =>
+            spriteBatch,
+            () =>
             {
                 gameState = GameState.Playing; // Cambia el estado del juego
             }
-        };
+        );
 
         menuButtons.Add(playButton);
         menuButtons.Add(quitButton);
@@ -208,25 +223,20 @@ public class MonoGaming : Game
             Content,
             "Salir del juego",
             new Rectangle(MathHelper.Min((int)_viewportDimensions.X, ((int)(_viewportDimensions.X / 2)) + 400), (int)_viewportDimensions.Y / 2, 384, 128),
-            spriteBatch)
-        {
-            OnClick = () =>
-            {
-                Exit(); // Cierra el juego
-            }
-        };
+            spriteBatch,
+            Exit
+        );
 
         RectangleButton playButton = new(
             Content,
             "Jugar",
             new Rectangle(MathHelper.Max(0, ((int)(_viewportDimensions.X / 2)) - 400 - (384 / 2)), (int)_viewportDimensions.Y / 2, 384, 128),
-            spriteBatch)
-        {
-            OnClick = () =>
+            spriteBatch,
+            () =>
             {
                 gameState = GameState.Playing; // Cambia el estado del juego
             }
-        };
+        );
 
         gameOverButtons.Add(playButton);
         gameOverButtons.Add(quitButton);
@@ -237,13 +247,19 @@ public class MonoGaming : Game
     protected override void LoadContent()
     {
         _gaussianBlur = Content.Load<Effect>(ContentFolderEffects + "GaussianBlur");
-        _gaussianBlur.Parameters["screenSize"]
-                .SetValue(_viewportDimensions);
-
+        _gaussianBlur.Parameters["screenSize"].SetValue(_viewportDimensions);
 
         _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
+        _motionBlur = Content.Load<Effect>(ContentFolderEffects + "MotionBlur");
+
+        _basicShaderTexture = Content.Load<Effect>(ContentFolderEffects + "BasicShaderTexture");
+
+        _basicShaderTexture.Parameters["ViewProjection"].SetValue(Matrix.Identity);
+        _basicShaderTexture.Parameters["World"].SetValue(Matrix.Identity);
 
         song = Content.Load<Song>(ContentFolderMusic + "GameBackgroundSong");
+
+        ParticleSystem.InitializeParticleSystem(new QuadMesh(GraphicsDevice, Content.Load<Effect>(ContentFolderEffects + "BasicShader")));
 
         // check the current state of the MediaPlayer.
         if (MediaPlayer.State != MediaState.Stopped)
@@ -253,10 +269,6 @@ public class MonoGaming : Game
         MediaPlayer.IsRepeating = true;
         // Play the selected song reference.
         MediaPlayer.Play(song);
-
-        Content.Load<SoundEffect>(ContentFolderSounds + "Explosion"); //TODO Sacar cuando haga el object pooling de las balas
-        Content.Load<SoundEffect>(ContentFolderSounds + "ProyectilLaser"); //Precarga para que no bajen los fps cuando se dispare el primer disparo
-
 
         base.LoadContent();
     }
@@ -284,6 +296,7 @@ public class MonoGaming : Game
             multiplicador = 1;
             vueltasAcumulador = 0;
             acumuladorIntermedioPuntos = 0;
+            _isFirstFrame = true;
             escenarioGenerator.GenerarEscenario();
         }
         else
@@ -309,12 +322,15 @@ public class MonoGaming : Game
 
             if (gameState == GameState.Playing)
             {
-                player.Update(gameTime, ref _view, ref _projection, Content);
+                player.Update(gameTime, ref _view);
+
                 Matrix aux = Matrix.Invert(_view);
                 CameraPosition = new Vector3(aux.M41, aux.M42, aux.M43);
                 LightPosition = player.Position + (Vector3.Left * 50) + (Vector3.Down * 3);
 
                 escenarioGenerator.Update(gameTime, player);
+
+                ParticleSystem.GetParticleSystem().Update(gameTime);
 
                 base.Update(gameTime);
             }
@@ -325,10 +341,9 @@ public class MonoGaming : Game
         }
     }
 
-
-
     protected override void Draw(GameTime gameTime)
     {
+
         float elapsedTime = (float)gameTime.TotalGameTime.TotalSeconds;
         //El fondo es negro
         GraphicsDevice.Clear(Color.Black);
@@ -353,6 +368,7 @@ public class MonoGaming : Game
             // Use the default blend and depth configuration
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.BlendState = BlendState.Opaque;
+            GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
 
             // Set the main render target, here we'll draw the base scene
             GraphicsDevice.SetRenderTarget(_mainSceneRenderTarget);
@@ -364,7 +380,18 @@ public class MonoGaming : Game
 
             player.Draw(viewProjection, CameraPosition, LightPosition, GraphicsDevice);
 
-            escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime);
+            escenarioGenerator.Draw(viewProjection, CameraPosition, elapsedTime, GraphicsDevice);
+
+            player.DrawEscudo(viewProjection, gameTime);
+
+            GraphicsDevice.BlendState = BlendState.AlphaBlend;
+            GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+
+            ParticleSystem.GetParticleSystem().Draw(viewProjection, CameraPosition);
+
+            GraphicsDevice.BlendState = BlendState.Opaque;
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+
             hud.Draw();
 
             #endregion
@@ -392,13 +419,14 @@ public class MonoGaming : Game
 
             #endregion
 
-            #region Final
+            #region FinalBloom
 
             // Set the depth configuration as none, as we don't use depth in this pass
             GraphicsDevice.DepthStencilState = DepthStencilState.None;
+            GraphicsDevice.BlendState = BlendState.Opaque;
 
-            // Set the render target as null, we are drawing into the screen now!
-            GraphicsDevice.SetRenderTarget(null);
+            GraphicsDevice.SetRenderTarget(_currentFrameRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
 
             _bloomPost.Parameters["Texture"]?.SetValue(_mainSceneRenderTarget);
             _bloomPost.Parameters["bloomTexture"]?.SetValue(_secondPassBloomRenderTarget);
@@ -407,11 +435,38 @@ public class MonoGaming : Game
 
             #endregion
 
+            #region MotionBlur
+
+            // Set the depth configuration as none, as we don't use depth in this pass
+            GraphicsDevice.DepthStencilState = DepthStencilState.None;
+
+            // Set the render target as null, we are drawing into the screen now!
+            GraphicsDevice.SetRenderTarget(null);
+
+            _motionBlur.Parameters["CurrentFrame"]?.SetValue(_currentFrameRenderTarget);
+            if (_isFirstFrame)
+            {
+                _motionBlur.Parameters["PreviousFrame"]?.SetValue(_currentFrameRenderTarget);
+                _isFirstFrame = false;
+            }
+            else
+            {
+                _motionBlur.Parameters["PreviousFrame"]?.SetValue(_previousFrameRenderTarget);
+            }
+
+            Quad.Draw(_motionBlur, GraphicsDevice);
+
+            (_currentFrameRenderTarget, _previousFrameRenderTarget) = (_previousFrameRenderTarget, _currentFrameRenderTarget);
+
+            #endregion
+
             if (gameState == GameState.Paused)
             {
                 //TIENE QUE IR DESPUES DEL DRAW PRINICPAL
                 pauseMenu.Draw();
             }
+
+
         }
 
         //Cada modelo deberia tener su propio draw.

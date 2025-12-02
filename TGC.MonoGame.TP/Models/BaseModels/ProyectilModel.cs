@@ -5,7 +5,6 @@ namespace TGC.MonoGame.TP.Models.BaseModels
 {
     internal class ProyectilModel
     {
-
         // Dimensiones predeterminadas para un cubo
         private const float D = 0.5f;
 
@@ -40,7 +39,7 @@ namespace TGC.MonoGame.TP.Models.BaseModels
                 1,3,2, 
 
                 // Atrás (4, 5, 6, 7)
-                5,4,7, 
+                5,4,7,
                 4,6,7,
 
                 // Izquierda (4, 0, 6, 2)

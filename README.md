@@ -6,32 +6,28 @@
 
 [#BuiltWithMonoGame](https://monogame.net/) and [.NET Core](https://dotnet.microsoft.com)
 
-## Descripción
+## Controles
 
-Proyecto plantilla para los trabajos prácticos de la asignatura electiva [Técnicas de Gráficos por Computadora](https://tgc-utn.github.io/) (TGC) en la carrera de Ingeniería en Sistemas de Información. Universidad Tecnológica Nacional, Facultad Regional Buenos Aires (UTN-FRBA).
+W A S D - Mover la nave
+Flecha izquierda y derecha - Rotar la nave
+Barra espaciadora - Disparar (Solo cerca de un objeto destruible)
 
-## Configuración del entorno de desarrollo
-
-Los pasos a seguir según su sistema operativo se pueden leer en el siguiente documento [install.md](https://github.com/tgc-utn/tgc-monogame-samples/blob/master/docs/install/install.md).
-
-Afuera del mundo Windows, vas a necesitar la ayudar de [Wine](https://www.winehq.org) para los shaders, por lo menos por [ahora](https://github.com/MonoGame/MonoGame/issues/2167).
-
-Los recursos usados se almacenan utilizando [Git LFS](https://git-lfs.github.com), con lo cual antes de clonar el repositorio les conviene tenerlo instalado así es automático el pull o si ya lo tienen pueden hacer `git lfs pull`.
+G - Habilitar/Inhabilitar god mode
+E - Activar escudo (Manualmente, tambien se activa al romper un obstáculo)
 
 ## Integrantes
 
-TGC, Tgcito  |  Apellido, Nombre
+Rabahia, Maron  |  Moreyra, Guido
 ------------ | -------------
-| <img src="https://github.com/tgc-utn/tgc-utn.github.io/blob/main/images/robotgc.png" height="500"> | <img src="https://github.com/tgc-utn/tgc-utn.github.io/blob/main/images/trofeotp.png" height="500"> |
+| <img src="https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Maron_Rabahia.jpg" height="500"> | <img src="https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Guido_Moreyra.png" height="500"> |
 
 ## Capturas
 
-![screenshot1](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot2](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot3](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot4](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
-![screenshot5](https://github.com/tgc-utn/tgc-monogame-tp/blob/master/TGC.MonoGame.TP/Icon.bmp)
+![Menu Principal](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_1.jpg)
+![Captura Gameplay 1](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_2.jpg)
+![Captura Gameplay 2](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_3.jpg)
+![Captura fin de partida](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Captura_juego_4.jpg)
 
 ## Game Play
 
-[![Watch the video](https://img.youtube.com/vi/pgEwUC0jvH4/0.jpg)](https://www.youtube.com/playlist?list=PLRM4L32DjvnazuMl8wZlbpEYL5Qh63ulG)
+![Video gameplay](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/Documentacion/Gameplay_video.mp4)
