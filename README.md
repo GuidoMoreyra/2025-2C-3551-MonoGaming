@@ -34,3 +34,7 @@ Rabahia, Maron  |  Moreyra, Guido
 ## Game Play
 
 ![Video gameplay](https://github.com/GuidoMoreyra/2025-2C-3551-MonoGaming/blob/master/Documentacion/Gameplay_video.mp4)
+
+
+https://github.com/user-attachments/assets/2b73ff2d-cc2b-4f70-93e2-56a80d47cce0
+
