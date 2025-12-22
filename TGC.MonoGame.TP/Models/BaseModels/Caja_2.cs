@@ -14,7 +14,7 @@ namespace TGC.MonoGame.TP.Models.BaseModels
 
             var texture = content.Load<Texture2D>(MonoGaming.ContentFolderTextures + "Caja_2/Caja2_Diana");
 
-            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "TextureOpacityShader");
+            var effect = content.Load<Effect>(MonoGaming.ContentFolderEffects + "TextureOpacityShaderFresnel");
 
             foreach (var mesh in _model.Meshes)
             {

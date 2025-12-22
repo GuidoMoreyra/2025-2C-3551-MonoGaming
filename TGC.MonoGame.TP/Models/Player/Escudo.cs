@@ -8,8 +8,8 @@ namespace TGC.MonoGame.TP.Models.Player
     internal class Escudo
     {
         private const float SCALE = 5.0f;
-        private const float OPACITY = 0.3f;
-        private const float SPEED = 0.2f;
+        private const float OPACITY = 0.7f;
+        private const float SPEED = 0.15f;
 
         private readonly Model _model;
         private readonly Matrix _scaleMatrix;

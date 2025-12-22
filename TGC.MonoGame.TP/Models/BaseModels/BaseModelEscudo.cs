@@ -26,8 +26,8 @@ namespace TGC.MonoGame.TP.Models.BaseModels
                         graphicsDevice,
                         256,
                         Color.LightBlue,
-                        Color.LightYellow,
-                        8
+                        Color.LightPink,
+                        32
                     ));
                     meshPart.Effect.Parameters["Opacity"]?.SetValue(1.0f);
                 }
