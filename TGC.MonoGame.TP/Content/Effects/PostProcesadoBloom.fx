@@ -71,11 +71,27 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     //return bloomColor;
 }
 
-technique BasicColorDrawing
+float4 NoBloomPS(VertexShaderOutput input) : COLOR
+{
+    float4 sceneColor = tex2D(s, input.TexCoord);
+    
+    return sceneColor;
+}
+
+technique BloomOn
 {
 	pass P0
 	{
 		VertexShader = compile VS_SHADERMODEL MainVS();
 		PixelShader = compile PS_SHADERMODEL MainPS();
+	}
+};
+
+technique BloomOff
+{
+	pass P0
+	{
+		VertexShader = compile VS_SHADERMODEL MainVS();
+		PixelShader = compile PS_SHADERMODEL NoBloomPS();
 	}
 };

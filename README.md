@@ -18,6 +18,8 @@ G - Habilitar/Inhabilitar god mode
 
 E - Activar escudo (Manualmente, tambien se activa al romper un obstáculo)
 
+B - Habilitar/Inhabilitar Bloom
+
 ## Integrantes
 
 Rabahia, Maron  |  Moreyra, Guido

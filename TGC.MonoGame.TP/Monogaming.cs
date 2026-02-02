@@ -45,6 +45,8 @@ public class MonoGaming : Game
 
     private bool _wasPaused;
     private bool _isFirstFrame;
+    private bool _isBloomOn;
+    private bool _isBPressed;
     private GameState gameState;
 
     private SpriteBatch spriteBatch;
@@ -90,6 +92,7 @@ public class MonoGaming : Game
 
     protected override void Initialize()
     {
+        _isBloomOn = true;
         puntos = 0;
         multiplicador = 1;
         acumuladorIntermedioPuntos = 0;
@@ -250,6 +253,7 @@ public class MonoGaming : Game
         _gaussianBlur.Parameters["screenSize"].SetValue(_viewportDimensions);
 
         _bloomPost = Content.Load<Effect>(ContentFolderEffects + "PostProcesadoBloom");
+        _bloomPost.CurrentTechnique = _bloomPost.Techniques["BloomOn"];
         _motionBlur = Content.Load<Effect>(ContentFolderEffects + "MotionBlur");
 
         _basicShaderTexture = Content.Load<Effect>(ContentFolderEffects + "BasicShaderTexture");
@@ -338,6 +342,24 @@ public class MonoGaming : Game
             {
                 pauseMenu.Update();
             }
+        }
+
+        if (!_isBPressed && keyboardState.IsKeyDown(Keys.B))
+        {
+            _isBPressed = true;
+            _isBloomOn = !_isBloomOn;
+            if (_isBloomOn)
+            {
+                _bloomPost.CurrentTechnique = _bloomPost.Techniques["BloomOn"];
+            }
+            else
+            {
+                _bloomPost.CurrentTechnique = _bloomPost.Techniques["BloomOff"];
+            }
+        }
+        else if(_isBPressed && keyboardState.IsKeyUp(Keys.B))
+        {
+            _isBPressed = false;
         }
     }
 
